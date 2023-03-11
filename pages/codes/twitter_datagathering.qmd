@@ -1,0 +1,127 @@
+---
+title: <b>Twitter Data Gathering</b>
+format:
+  html:
+    theme: lumen
+    toc: true
+    self-contained: true
+    embed-resources: true
+    page-layout: full
+    code-fold: true
+    code-tools: true
+jupyter: python3
+---
+
+# Data Gathering
+
+- Data Gathering and Pre-Processing is a very important step in any Data science project pipeline. It is undeniable that 80% of a data scientist's time and effort is spent in collecting, cleaning and preparing the data for analysis because datasets come in various sizes and are different in nature. It is extremely important for a data scientist to reshape and refine the datasets into usable datasets, which can be leveraged for analytics.
+- Knowledge is power, information is knowledge, and data is information in digitized form, at least as defined in IT. Hence, data is power. But before you can leverage that data into a successful strategy for your organization or business, you need to gather it. That’s your first step.
+- Before we define what is data collection, it’s essential to ask the question, “What is data?” The abridged answer is, data is various kinds of information formatted in a particular way. Therefore, data collection is the process of gathering, measuring, and analyzing accurate data from a variety of relevant sources to find answers to research problems, answer questions, evaluate outcomes, and forecast trends and probabilities.
+- Our society is highly dependent on data, which underscores the importance of collecting it. Accurate data collection is necessary to make informed business decisions, ensure quality assurance, and keep research integrity.
+- During data collection, the researchers must identify the data types, the sources of data, and what methods are being used. We will soon see that there are many different data collection methods. There is heavy reliance on data collection in research, commercial, and government fields.
+- `Why Do We Need Data Collection?`
+    - Before a judge makes a ruling in a court case or a general creates a plan of attack, they must have as many relevant facts as possible. The best courses of action come from informed decisions, and information and data are synonymous.
+    - The concept of data collection isn’t a new one but the world has changed. There is far more data available today, and it exists in forms that were unheard of a century ago. The data collection process has had to change and grow with the times, keeping pace with technology.
+    - Whether you’re in the world of academia, trying to conduct research, or part of the commercial sector, thinking of how to promote a new product, you need data collection to help you make better choices.
+- `What Are the Different Methods of Data Collection?`
+    - Surveys
+    - Transactional Tracking
+    - Interviews and Focus Groups
+    - Observation
+    - Online Tracking
+    - Forms
+    - Social Media Monitoring
+    - Application Programming Interface
+
+# Twitter API
+- Twitter is what’s happening in the world and what people are talking about right now. You can access Twitter via the web or your mobile device. To share information on Twitter as widely as possible, we also provide companies, developers, and users with programmatic access to Twitter data through our APIs (application programming interfaces).
+- At the end of 2020, Twitter introduced a new Twitter API built from the ground up. Twitter API v2 comes with more features and data you can pull and analyze, new endpoints, and a lot of functionalities.
+- With the introduction of that new API, Twitter also introduced a new powerful free product for academics: The Academic Research product track.
+- The track grants free access to full-archive search and other v2 endpoints, with a volume cap of 10,000,000 tweets per month! If you want to know if you qualify for the track or not, check this link.
+- Yet since v2 of the API is fairly new, fewer resources exist if you run into issues through the process of collecting data for your research.
+- Twitter data is unique from data shared by most other social platforms because it reflects information that users choose to share publicly. The API platform provides broad access to public Twitter data that users have chosen to share with the world. It also support APIs that allow users to manage their own non-public Twitter information (e.g., Direct Messages) and provide this information to developers whom they have authorized to do so. 
+
+# Import Libraries
+
+```{python}
+import pandas as pd
+import os
+import time
+import requests
+import json
+import csv
+from tqdm import tqdm
+
+import tweepy
+
+import requests
+import pandas as pd
+import os
+
+import matplotlib.pyplot as plt
+from turtle import color
+from collections import Counter
+```
+
+# Set Twitter API Keys
+
+```{python}
+consumer_key        = 'mvpqVTwR7IBgL4wLAF6VSV8Fd'
+consumer_secret     = 'MPTgWHei1DLcLSI9BixrufChLU1t2L63a2Z01wqPPWeKnuquGR'
+access_token        = '1567741611135717376-P5V6SK5VpbNK5E9sPqYjBJBNuYXSsw'
+access_token_secret = 'ih0sZBZDmCieDXNAXjdPvxmjeLBvV9J6nkM8DfxhWwdPp'
+bearer_token        = 'AAAAAAAAAAAAAAAAAAAAAOJigwEAAAAA85lnBTZlhhTy84L4U2c%2BR8T4e7c%3DPNtcxQs4Lybq3eeN8CTBjyxCuPbPRv2DaZ3H5IgnkzbXj3WbPb'
+```
+
+# Set the Twitter authentication and bearer token
+
+```{python}
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+
+api = tweepy.API(auth, wait_on_rate_limit=True)
+headers = {"Authorization": "Bearer {}".format(bearer_token)}
+```
+
+Extraction function
+```{python}
+def search_twitter(query, max_results, bearer_token, start_time, end_time, tweet_fields):
+    
+    client = tweepy.Client(bearer_token = bearer_token)
+    tweets = tweepy.Paginator(client.search_recent_tweets, query=query, tweet_fields=tweet_fields,
+                                start_time=start_time, end_time=end_time).flatten(limit = max_results)
+    
+    tweet_search = []
+    for tweet in tweets:
+        tweet_search.append((tweet.text, tweet.author_id, tweet.created_at, tweet.lang))
+        
+    return tweet_search
+```
+
+Storing the tweets to a CSV file
+```{python}
+def store_tweets_f1(query_list):
+    
+    max_results = 1000
+    start_time = '2023-03-02T00:00:00Z'
+    end_time = '2023-03-07T00:00:00Z'
+    tweet_fields = 'text,author_id,created_at,lang'
+    
+    for query in query_list:
+        tweet_search = search_twitter(query + " f1 -is:retweet", max_results, bearer_token, start_time, end_time, tweet_fields)
+        df = pd.DataFrame(tweet_search, columns = ['text', 'author_id', 'created_at', 'lang'])
+        df = df[df['lang'] == 'en']
+        df = df[['text', 'lang']]
+        df.to_csv('../../data/00-raw-data/' + query + '_f1_tweets_2023.csv')
+        
+    return df
+```
+
+```{python}
+query_list = ['ferrari', 'mercedes', 'redbull', 'mclaren', 'aston martin', 'alpha tauri', 'alpine', 'williams', 'haas', 'alfa romeo']
+```
+
+```{{python}}
+store_tweets_f1(query_list)
+```
+

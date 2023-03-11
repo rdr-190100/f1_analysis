@@ -1,0 +1,63 @@
+project:
+  type: website
+
+website:
+  title: Formula One Prediction
+  navbar:
+    background: primary
+    search: true
+    left:
+      - text: "Home"
+        href: https://ramdayalrewaria.quarto.pub/
+      - text: "Data Gathering"
+        menu: 
+          - text: "Record Data"
+            file: pages/codes/record_datagathering.qmd
+          - text: "Twitter Data"
+            file: pages/codes/twitter_datagathering.qmd
+      - text: "Data Cleaning"
+        menu:
+          - text: "Record Data in R"
+            file: pages/codes/record_datacleaningR.qmd
+          - text: "Record Data in Python"
+            file: pages/codes/record_datacleaningPython.qmd
+          - text: "Twitter Data"
+            file: pages/codes/twitter_datacleaning.qmd
+      - text: "EDA"
+        file: pages/codes/EDA.qmd
+      - text: "Naive Bayes'"
+        menu: 
+          - text: "Record Data"
+            file: pages/codes/record_NB.qmd
+          - text: "Twitter Data"
+            file: pages/codes/twitter_NB.qmd
+      - text: "Decision Trees"
+        file: pages/codes/DT.qmd
+      - text: "SVM"
+        file: pages/codes/SVM.qmd
+      - text: "Clustering"
+        file: pages/codes/Clustering.qmd
+      - text: "ARM"
+        file: pages/codes/ARM.qmd
+      - text: "Conclusion"
+        file: pages/conclusions.qmd
+    right: 
+      - icon: github
+        href: https://github.com/anly501/anly-501-project-rdr-190100
+      - icon: linkedin
+        href: https://www.linkedin.com/in/ramdayal-rewaria/
+
+format:
+  html:
+    theme: lumen
+    toc: true
+    self-contained: true
+    embed-resources: true
+    page-layout: full
+    code-fold: true
+    code-tools: true
+
+execute: 
+  freeze: auto
+
+

@@ -1,0 +1,367 @@
+---
+title: <b>Record Data Gathering</b>
+format:
+  html:
+    theme: lumen
+    toc: true
+    self-contained: true
+    embed-resources: true
+    page-layout: full
+    code-fold: true
+    code-tools: true
+jupyter: python3
+---
+
+# Data Gathering
+
+- Data Gathering and Pre-Processing is a very important step in any Data science project pipeline. It is undeniable that 80% of a data scientist's time and effort is spent in collecting, cleaning and preparing the data for analysis because datasets come in various sizes and are different in nature. It is extremely important for a data scientist to reshape and refine the datasets into usable datasets, which can be leveraged for analytics.
+- Knowledge is power, information is knowledge, and data is information in digitized form, at least as defined in IT. Hence, data is power. But before you can leverage that data into a successful strategy for your organization or business, you need to gather it. That’s your first step.
+- Before we define what is data collection, it’s essential to ask the question, “What is data?” The abridged answer is, data is various kinds of information formatted in a particular way. Therefore, data collection is the process of gathering, measuring, and analyzing accurate data from a variety of relevant sources to find answers to research problems, answer questions, evaluate outcomes, and forecast trends and probabilities.
+- Our society is highly dependent on data, which underscores the importance of collecting it. Accurate data collection is necessary to make informed business decisions, ensure quality assurance, and keep research integrity.
+- During data collection, the researchers must identify the data types, the sources of data, and what methods are being used. We will soon see that there are many different data collection methods. There is heavy reliance on data collection in research, commercial, and government fields.
+- `Why Do We Need Data Collection?`
+    - Before a judge makes a ruling in a court case or a general creates a plan of attack, they must have as many relevant facts as possible. The best courses of action come from informed decisions, and information and data are synonymous.
+    - The concept of data collection isn’t a new one but the world has changed. There is far more data available today, and it exists in forms that were unheard of a century ago. The data collection process has had to change and grow with the times, keeping pace with technology.
+    - Whether you’re in the world of academia, trying to conduct research, or part of the commercial sector, thinking of how to promote a new product, you need data collection to help you make better choices.
+- `What Are the Different Methods of Data Collection?`
+    - Surveys
+    - Transactional Tracking
+    - Interviews and Focus Groups
+    - Observation
+    - Online Tracking
+    - Forms
+    - Social Media Monitoring
+    - Application Programming Interface
+
+# Application Programming Interface (API)
+
+- APIs are mechanisms that enable two software components to communicate with each other using a set of definitions and protocols. For example, the weather bureau’s software system contains daily weather data. The weather app on your phone “talks” to this system via APIs and shows you daily weather updates on your phone.
+- API stands for Application Programming Interface. In the context of APIs, the word Application refers to any software with a distinct function. Interface can be thought of as a contract of service between two applications. This contract defines how the two communicate with each other using requests and responses. Their API documentation contains information on how developers are to structure those requests and responses.
+- API architecture is usually explained in terms of client and server. The application sending the request is called the client, and the application sending the response is called the server. So in the weather example, the bureau’s weather database is the server, and the mobile app is the client. 
+- `Type of APIs:`
+    - **SOAP APIs:** These APIs use Simple Object Access Protocol. Client and server exchange messages using XML. This is a less flexible API that was more popular in the past.
+    - **RPC APIs:** These APIs are called Remote Procedure Calls. The client completes a function (or procedure) on the server, and the server sends the output back to the client.
+    - **Websocket APIs:** Websocket API is another modern web API development that uses JSON objects to pass data. A WebSocket API supports two-way communication between client apps and the server. The server can send callback messages to connected clients, making it more efficient than REST API.
+    - **REST APIs:** These are the most popular and flexible APIs found on the web today. The client sends requests to the server as data. The server uses this client input to start internal functions and returns output data back to the client. Let’s look at REST APIs in more detail below.
+- `What are REST APIs?`<br>
+REST stands for Representational State Transfer. REST defines a set of functions like GET, PUT, DELETE, etc. that clients can use to access server data. Clients and servers exchange data using HTTP. The main feature of REST API is statelessness. Statelessness means that servers do not save client data between requests. Client requests to the server are similar to URLs you type in your browser to visit a website. The response from the server is plain data, without the typical graphical rendering of a web page.
+
+# Import Libraries
+
+```{python}
+import requests
+import pandas as pd
+import numpy as np
+import json
+```
+
+# Data Extraction from Ergast API
+- The Ergast Developer API is an experimental web service which provides a historical record of motor racing data for non-commercial purposes. The API provides data for the Formula One series, from the beginning of the world championships in 1950. I used the requests library in python to get the information from this API.
+- From this API we do not need the entire data as some of it is redundant and are available in every table. We need information about:
+    - All the Races since 1950 per season.
+    - All the Qualifiers
+    - All the Circuits
+    - All the Driver Standings
+    - All the Constructor Standings
+    - All the Seasons
+
+## Race Information
+There are 2 main things in a Formula 1. The first is Season and the second is Round. There are multiple rounds (also called as Races) in every season and every Season happends once a year. The data contains the information about every round of every season such as race name, circuit information, date and the results.
+
+```{python}
+def get_race_results(url, offset, limit=1000):
+    
+    result = requests.get(url + str(limit) + '&offset=' + str(offset))
+    
+    return result.json()
+```
+
+```{python}
+recent_race_json = get_race_results(url = 'http://ergast.com/api/f1/results.json?limit=', offset = 25000)
+
+with open('../../data/00-raw-data/race_data.json', 'w') as outfile:
+    json.dump(recent_race_json, outfile)
+```
+
+```{python}
+def all_races():
+    
+    limit = 1000
+    result = []
+    length_per_page = []
+    url = 'http://ergast.com/api/f1/results.json?limit='
+    
+    p = 0
+    
+    while p < 100:
+        
+        page_result_json = get_race_results(url = url, offset = p*1000)
+        list_per_page = page_result_json['MRData']['RaceTable']['Races']
+    
+        if len(list_per_page) == 0:
+            break
+        
+        length_per_page.append(len(list_per_page))
+        
+        for i in range(len(list_per_page)):
+            result.append(list_per_page[i])
+        
+        p = p + 1
+        
+
+        
+    return result, length_per_page
+```
+
+```{python}
+result_all_races,length_per_page = all_races()
+```
+
+```{python}
+race_result_df = pd.DataFrame(result_all_races)
+race_result_df.to_csv('../../data/00-raw-data/race_results.csv')
+```
+
+## Qualifying Information
+Before every main Race of a season, there is a Qualifier where each driver races around the whole Circuit to set the fastest lap time. This determines the position that the driver is going to be starting on the Race day. The Qualifiers were fully implemented properly from the 2003 season onwards so there is no data available for seasons before 2003.
+
+```{python}
+def get_qual_results(url, offset, limit=1000):
+    
+    result = requests.get(url + str(limit) + '&offset=' + str(offset))
+    
+    return result.json()
+```
+
+```{python}
+recent_qual_json = get_qual_results(url = 'http://ergast.com/api/f1/qualifying.json?limit=', offset = 9000)
+
+with open('../../data/00-raw-data/qual_data.json', 'w') as outfile:
+    json.dump(recent_qual_json, outfile)
+```
+
+```{python}
+def all_qual():
+    
+    limit = 1000
+    result = []
+    length_per_page = []
+    url = 'http://ergast.com/api/f1/qualifying.json?limit='
+    
+    p = 0
+    
+    while p < 100:
+        
+        page_result_json = get_qual_results(url = url, offset = p*1000)
+        list_per_page = page_result_json['MRData']['RaceTable']['Races']
+    
+        if len(list_per_page) == 0:
+            break
+        
+        length_per_page.append(len(list_per_page))
+        
+        for i in range(len(list_per_page)):
+            result.append(list_per_page[i])
+        
+        p = p + 1
+        
+
+        
+    return result, length_per_page
+```
+
+```{python}
+result_all_qual,length_per_page = all_qual()
+```
+
+```{python}
+qual_result_df = pd.DataFrame(result_all_qual)
+```
+
+```{python}
+qual_result_df.to_csv('../../data/00-raw-data/qual_results.csv')
+```
+
+## Circuit Information
+The tracks where each race is conducted on are knows as Circuits. The track owners have to renew their contract each year with the FIA to keep their track as one of the tracks where the Races will be held. The data has columns such as id of the circuit, the location and so on.
+
+```{python}
+def get_circuit_info(url, offset, limit=1000):
+    
+    result = requests.get(url + str(limit) + '&offset=' + str(offset))
+    
+    return result.json()
+```
+
+```{python}
+circuit_json = get_qual_results(url = 'http://ergast.com/api/f1/circuits.json?limit=', offset = 0)
+
+with open('../../data/00-raw-data/circuit_data.json', 'w') as outfile:
+    json.dump(circuit_json, outfile)
+```
+
+```{python}
+circuit_list = circuit_json['MRData']['CircuitTable']['Circuits']
+```
+
+```{python}
+circuit_df = pd.DataFrame(circuit_list)
+```
+
+```{python}
+circuit_df.to_csv('../../data/00-raw-data/circuit_info.csv')
+```
+
+## Driver Standings Information
+After each Round, points are allocated to winners of the race that follow a set of rules. All the points are combined at the end of every season for the World Driver's Championship. The driver with the highest points wins the WDC. This data contains the standings and points of each driver that competed in each season at the end of season.
+
+```{python}
+def get_driverstanding_info(url, offset, limit=1000):
+    
+    result = requests.get(url + str(limit) + '&offset=' + str(offset))
+    
+    return result.json()
+```
+
+```{python}
+driverstanding_json = get_driverstanding_info(url = 'http://ergast.com/api/f1/driverStandings.json?limit=', offset = 2000)
+
+with open('../../data/00-raw-data/driverstanding_data.json', 'w') as outfile:
+    json.dump(driverstanding_json, outfile)
+```
+
+```{python}
+def all_driverstandings():
+    
+    limit = 1000
+    result = []
+    length_per_page = []
+    url = 'http://ergast.com/api/f1/driverStandings.json?limit='
+    
+    p = 0
+    
+    while p < 100:
+        
+        page_result_json = get_driverstanding_info(url = url, offset = p*1000)
+        list_per_page = page_result_json['MRData']['StandingsTable']['StandingsLists']
+    
+        if len(list_per_page) == 0:
+            break
+        
+        length_per_page.append(len(list_per_page))
+        
+        for i in range(len(list_per_page)):
+            result.append(list_per_page[i])
+        
+        p = p + 1
+        
+
+        
+    return result, length_per_page
+```
+
+```{python}
+result_all_driverstandings,length_per_page = all_driverstandings()
+```
+
+```{python}
+driver_standings_df = pd.DataFrame(result_all_driverstandings)
+```
+
+```{python}
+driver_standings_df.to_csv('../../data/00-raw-data/driver_standings.csv')
+```
+
+## Constructor Standings
+A Constructor in F1 is a term for teams. Each constructor has 2 drivers with identical cars competing in a season. At the end of the season the points of both the drivers are combined for the Constructor's Cup. The team with the highest points wins that cup. This data contains the standings and points of every Constructor that competed in each season at the end of season.
+
+```{python}
+def get_constructorstanding_info(url, offset, limit=1000):
+    
+    result = requests.get(url + str(limit) + '&offset=' + str(offset))
+    
+    return result.json()
+```
+
+```{python}
+constructortanding_json = get_constructorstanding_info(url = 'http://ergast.com/api/f1/constructorStandings.json?limit=', offset = 0)
+
+with open('../../data/00-raw-data/constructorstanding_data.json', 'w') as outfile:
+    json.dump(constructortanding_json, outfile)
+```
+
+```{python}
+constructortanding_list = constructortanding_json['MRData']['StandingsTable']['StandingsLists']
+```
+
+```{python}
+constructortanding_df = pd.DataFrame(constructortanding_list)
+```
+
+```{python}
+constructortanding_df.to_csv('../../data/00-raw-data/constructor_standings.csv')
+```
+
+## Season Information
+Every season there is either new set of drivers or tracks or rules. This data has all the information of the tracks of all the rounds of every season.
+
+```{python}
+def get_season_info(url, offset, limit=1000):
+    
+    result = requests.get(url + str(limit) + '&offset=' + str(offset))
+    
+    return result.json()
+```
+
+```{python}
+def get_each_season_info(url, offset, season, limit=1000):
+    
+    result = requests.get(url + season + '.json?limit=' + str(limit) + '&offset=' + str(offset))
+    
+    return result.json()
+```
+
+```{python}
+season_json = get_season_info(url = 'http://ergast.com/api/f1/seasons.json?limit=', offset = 0)
+
+with open('../../data/00-raw-data/season_data.json', 'w') as outfile:
+    json.dump(season_json, outfile)
+```
+
+```{python}
+season_list = season_json['MRData']['SeasonTable']['Seasons']
+```
+
+```{python}
+season_df = pd.DataFrame(season_list)
+```
+
+```{python}
+season_df.to_csv('../../data/00-raw-data/season_info.csv')
+```
+
+```{python}
+all_season_list = []
+
+for i in range(len(season_df)):
+    
+    temp_json = get_each_season_info(url = 'http://ergast.com/api/f1/', season = season_df['season'][i], offset = 0)
+    temp_list = temp_json['MRData']['RaceTable']['Races']
+    
+    for j in range(len(temp_list)):
+        
+        all_season_list.append(temp_list[j])
+```
+
+```{python}
+all_season_df = pd.DataFrame(all_season_list)
+```
+
+```{python}
+all_season_df
+```
+
+```{python}
+all_season_df.to_csv('../../data/00-raw-data/all_season_info.csv')
+```
+

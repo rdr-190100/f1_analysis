@@ -1,0 +1,422 @@
+---
+title: <b>Naive Bayes' for Twitter Data</b>
+format:
+  html:
+    theme: lumen
+    toc: true
+    self-contained: true
+    embed-resources: true
+    page-layout: full
+    code-fold: true
+    code-tools: true
+jupyter: python3
+---
+
+# Introduction
+- I have taken English Tweets from Twitter of the 10 teams in Formula One from 1 week to create different Naive Bayes model for predicting which tweet belongs to which team.
+- The Data is cleaned in the previous sections.
+- Overview of Data Cleaning:
+    - F1 tweets provide context about sentiments about fans all over the world. Since some fans do not speak English, they tend to tweet in languages other than English. After extracting 1000 tweets each for every team from Twitter. I have only taken tweets of the English language for better understandibility.
+    - Various Pre-Processing tasks were applied on the tweet text like excess blank spaces, stopwords, numbers and punctuations were removed.
+    - Furthermore the tweets were tokenized and lemmatized for further analysis.
+    - I also calculated sentiments of tweets in order to understand the emotions of fans behind writing these tweets and to better understand the need of this project.
+- The master table has consists of 3,928 rows, 9 columns and 1 label column.
+- The label column is based on the teams that are racing in the current season (2022) that are:
+    - Ferrari
+    - Mercedes
+    - Redbull
+    - Williams
+    - Alpha Tauri
+    - Alfa Romeo
+    - McLaren
+    - Alpine
+    - Haas
+    - Aston Martin
+
+# Import Libraries
+
+```{python}
+from sklearn.datasets import load_iris
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as  pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+
+from wordcloud import WordCloud, STOPWORDS
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.metrics import confusion_matrix
+
+from sklearn.model_selection import train_test_split
+import seaborn as sns
+from sklearn import metrics
+
+from sklearn.naive_bayes import MultinomialNB
+from sklearn import metrics
+from sklearn.metrics import confusion_matrix
+
+from wordcloud import WordCloud, STOPWORDS
+from sklearn.preprocessing import LabelEncoder
+```
+
+# Import Data
+
+```{python}
+df = pd.read_csv('../../data/01-modified-data/all_teams_sentiment_df.csv')
+df.head()
+```
+
+# Data Pre-Processing and Visualization
+
+- The cleaned data needs some pre-processing for it to be fed into Naive Bayes models.
+- Overview of `Pre-Processing`:
+    - Dropping unnecessary columns. We just need the tweet text columns and label column.
+    - During data cleaning, numbers were removed which also changed the word "f1" to "f" and the newline character "\n" was also not removed. These changes also need to be done while pre-processing.
+    - The label column has team names which need to be changed to numeric type.
+    - The data has to be split into X (tweet texts) and y (labels).
+
+```{python}
+for i in range(len(df)):
+    
+    df['text'][i] = df['text'][i].replace(" f ", " f1 ")
+    df['text'][i] = df['text'][i].strip("\n")
+```
+
+```{python}
+df1 = df[['Team', 'text']]
+```
+
+Visualizing the Number of tweets for each Team:
+
+```{python}
+df1['Team'].value_counts()
+```
+
+```{python}
+fig, ax = plt.subplots(figsize=(10, 6))
+
+sns.barplot(x = df1['Team'].value_counts().index, y = df1['Team'].value_counts().values, ax=ax)
+
+ax.set_xlabel('Team')
+ax.set_ylabel('Number of Tweets')
+ax.set_title('Number of Tweets per Team')
+ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+plt.savefig('../../images/Number of Tweets per Team.png')
+plt.show()
+```
+
+```{python}
+X = df1['text']
+y = df1['Team']
+```
+
+```{python}
+labelencoder = LabelEncoder()
+y = labelencoder.fit_transform(y)
+y
+```
+
+```{python}
+teams = ['Ferrari', 'Mercedes', 'Redbull', 'Haas', 'Mclaren', 'Alpine', 'Williams', 'Aston Martin', 'Alpha Tauri', 'Alfa Romeo']
+y1 = labelencoder.fit(teams)
+label_map = dict(zip(y1.classes_, y1.transform(y1.classes_)))
+label_list = list(label_map.keys())
+```
+
+## Count Vectorizer
+
+- Whenever we work on any NLP related problem, we process a lot of textual data. The textual data after processing needs to be fed into the model.
+- Characters and words are incomprehensible to machines. So, when dealing with text data, we must represent it numerically so that the machine can understand it.
+- The Count Vectorizer method converts text to numerical data.
+- CountVectorizer tokenizes (tokenization means dividing the sentences in words) the text along with performing very basic preprocessing. It removes the punctuation marks and converts all the words to lowercase.
+- CountVectorizer creates a matrix in which each unique word is represented by a column of the matrix, and each text sample from the document is a row in the matrix. The value of each cell is nothing but the count of the word in that particular text sample.
+- Inside CountVectorizer, these words are not stored as strings. Rather, they are given a particular index value. This way of representation is known as a Sparse Matrix
+- In our dataset we are taking tweets of 10 different teams and vectorizing the data so that it can fed into our Naive Bayes' Models.
+
+```{python}
+import random as rd
+MyCV_content=CountVectorizer(input='content',
+                        stop_words='english'
+                        #max_features=100
+                        )
+
+My_DTM2=MyCV_content.fit_transform(X)
+ColNames=MyCV_content.get_feature_names()
+My_DF_content=pd.DataFrame(My_DTM2.toarray(),columns=ColNames)
+
+
+My_DF_content['LABEL'] = pd.DataFrame(y,columns=['LABEL'])
+rd.seed(1973)
+TrainDF, TestDF = train_test_split(My_DF_content, test_size=0.25)
+TrainLabels=TrainDF["LABEL"]
+TestLabels=TestDF["LABEL"]
+
+TrainDF = TrainDF.drop(["LABEL"], axis=1)
+TestDF = TestDF.drop(["LABEL"], axis=1)
+
+from collections import Counter
+Counter(y).keys()
+Counter(y).values()
+```
+
+```{python}
+My_DF_content.to_csv('../../data/02-model-data/twitter_data_count_vectorizer.csv')
+```
+
+# Naive Bayes Model
+
+- `Bayes' Theorem`: In probability theory and statistics, Bayes' theorem (alternatively Bayes' law or Bayes' rule), named after Thomas Bayes, describes the probability of an event, based on prior knowledge of conditions that might be related to the event. For example, if the risk of developing health problems is known to increase with age, Bayes' theorem allows the risk to an individual of a known age to be assessed more accurately (by conditioning it on their age) than simply assuming that the individual is typical of the population as a whole.
+- `Naive Bayes Algorithm` is a classification technique based on Bayes’ Theorem with an assumption of independence among predictors. In simple terms, a Naive Bayes classifier assumes that the presence of a particular feature in a class is unrelated to the presence of any other feature.
+- A fruit might be categorized as an apple, for instance, if it is red, rounded, and around 3 inches in diameter. Even if these characteristics depend on one another or on the presence of other characteristics, each of these traits separately increases the likelihood that this fruit is an apple, which is why it is called "Naive."
+- Naive Bayes model is easy to build and particularly useful for very large data sets. Along with simplicity, Naive Bayes is known to outperform even highly sophisticated classification methods.
+- Bayes' Theorem can be shown by this equation:
+$$ P(C|X) = \frac {P(X|C) * P(C)}{P(X)} $$
+- In the above equation:
+    - P(C|X) is the posterior probability of class (C, target) given predictor (X, attributes).
+    - P(C) is the prior probability of class.
+    - P(X|C) is the likelihood which is the probability of predictor given class.
+    - P(X) is the prior probability of predictor.
+- `How does Bayes Theorem work?`
+    - Let's take an example: A Path Lab is performing a Test of disease say “D” with two results “Positive” & “Negative.” They guarantee that their test result is 99% accurate: if you have the disease, they will give test positive 99% of the time. If you don’t have the disease, they will test negative 99% of the time. If 3% of all the people have this disease and test gives “positive” result, what is the probability that you actually have the disease?
+    - For solving the above problem, we will have to use conditional probability.
+        - Probability of people suffering from Disease D, P(D) = 0.03 = 3%
+        - Probability that test gives “positive” result and patient have the disease, P(Pos | D) = 0.99 =99%
+        - Probability of people not suffering from Disease D, P(~D) = 0.97 = 97%
+        - Probability that test gives “positive” result and patient does have the disease, P(Pos | ~D) = 0.01 =1%
+    - For calculating the probability that the patient actually have the disease i.e, P( D | Pos) we will use Bayes theorem.
+    - P(Pos) = P(D, pos) + P( ~D, pos) = P(pos|D)*P(D) + P(pos|~D)*P(~D) = 0.99 * 0.03 + 0.01 * 0.97 = 0.0394
+    - Hence, P( D | Pos) = (P(Pos | D) * P(D)) / P(Pos) = (0.99 * 0.03) / 0.0394 = 0.753807107
+    - So, Approximately 75% chances are there that the patient is actually suffering from disease.
+    - This is how Bayes' Theorem works. <a href='https://dataaspirant.com/naive-bayes-classifier-machine-learning'> Reference </a>
+- `Types of Naive Bayes Algorithms:`
+    1. **Gaussian Naïve Bayes Classifier:** In Gaussian Naïve Bayes, continuous values associated with each feature are assumed to be distributed according to a Gaussian distribution (Normal distribution). When plotted, it gives a bell-shaped curve which is symmetric about the mean of the feature values.
+    2. **Multinomial Naïve Bayes Classifier:** Feature vectors represent the frequencies with which certain events have been generated by a multinomial distribution. This is the event model typically used for document classification.
+    3. **Bernoulli Naïve Bayes Classifier:** In the multivariate Bernoulli event model, features are independent booleans (binary variables) describing inputs. Like the multinomial model, this model is popular for document classification tasks, where binary term occurrence (i.e. a word occurs in a document or not) features are used rather than term frequencies (i.e. frequency of a word in the document).
+- `Applications of Naive Bayes Algorithm:`
+    1. Real time Prediction: Naive Bayes is an eager learning classifier and it is sure fast. Thus, it could be used for making predictions in real time.
+    2. Multi class Prediction: This algorithm is also well known for multi class prediction feature. Here we can predict the probability of multiple classes of target variable.
+    3. Text classification/ Spam Filtering/ Sentiment Analysis: Naive Bayes classifiers mostly used in text classification (due to better result in multi class problems and independence rule) have higher success rate as compared to other algorithms. As a result, it is widely used in Spam filtering (identify spam e-mail) and Sentiment Analysis (in social media analysis, to identify positive and negative customer sentiments)
+    4. Recommendation System: Naive Bayes Classifier and Collaborative Filtering together builds a Recommendation System that uses machine learning and data mining techniques to filter unseen information and predict whether a user would like a given resource or not
+- `Advantages:`
+    - It is easy and fast to predict class of test data set. It also perform well in multi class prediction
+    - When assumption of independence holds, a Naive Bayes classifier performs better compare to other models like logistic regression and you need less training data.
+    - It performs well in case of categorical input variables compared to numerical variable(s). For numerical variable, normal distribution is assumed (bell curve, which is a strong assumption).
+- `Disadvatages:`
+    - If categorical variable has a category (in test data set), which was not observed in training data set, then model will assign a 0 (zero) probability and will be unable to make a prediction. This is often known as “Zero Frequency”. To solve this, we can use the smoothing technique. One of the simplest smoothing techniques is called Laplace estimation.
+    - On the other side naive Bayes is also known as a bad estimator, so the probability outputs from predict_proba are not to be taken too seriously.
+    - Another limitation of Naive Bayes is the assumption of independent predictors. In real life, it is almost impossible that we get a set of predictors which are completely independent.
+
+## Multinomial Naïve Bayes Classifier
+
+- There are thousands of softwares or tools for the analysis of numerical data but there are very few for texts. Multinomial Naive Bayes is one of the most popular supervised learning classifications that is used for the analysis of the categorical text data.
+- Text data classification is gaining popularity because there is an enormous amount of information available in email, documents, websites, etc. that needs to be analyzed. Knowing the context around a certain type of text helps in finding the perception of a software or product to users who are going to use it.
+- Multinomial Naive Bayes algorithm is a probabilistic learning method that is mostly used in Natural Language Processing (NLP). The algorithm is based on the Bayes theorem and predicts the tag of a text such as a piece of email or newspaper article. It calculates the probability of each tag for a given sample and then gives the tag with the highest probability as output.
+- Naive Bayes classifier is a collection of many algorithms where all the algorithms share one common principle, and that is each feature being classified is not related to any other feature. The presence or absence of a feature does not affect the presence or absence of the other feature.
+- Since we are dealing with text data (tweets) converted into numerical using Count Vectorizer, Multinomial Naive Bayes will be useful here.
+- Laplace smoothing is a smoothing technique that handles the problem of zero probability in Naïve Bayes. It is controlled by the parameter 'alpha' in sklearn's MultinomialNB. For this exercise we will take models with alpha as 1,5 and 10.
+
+### Model 1 (alpha = 1)
+
+```{python}
+MyModelNB= MultinomialNB(alpha = 1)
+
+NB1=MyModelNB.fit(TrainDF, TrainLabels)
+Preds = MyModelNB.predict(TestDF)
+Pred_Proba = MyModelNB.predict_proba(TestDF)
+print(metrics.classification_report(TestLabels, Preds))
+cnf_matrix1 = confusion_matrix(TestLabels, Preds)
+
+##Visualise Confusion Matrix
+labels = label_list
+ax1=plt.subplot()
+sns.heatmap(confusion_matrix(TestLabels, Preds), annot=True, fmt='g', ax=ax1)
+
+# labels, title and ticks
+ax1.set_xlabel('Predicted labels');ax1.set_ylabel('True labels');
+ax1.set_title('Confusion Matrix for Model 1') 
+ax1.xaxis.set_ticklabels(labels)
+ax1.yaxis.set_ticklabels(labels)
+ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, horizontalalignment='right')
+ax1.set_yticklabels(ax1.get_yticklabels(), rotation=45, horizontalalignment='right')
+plt.savefig('../../images/Confusion Matrix for Model 1.png')
+plt.show()
+plt.close()
+```
+
+### Model 2 (alpha = 5)
+
+```{python}
+MyModelNB2= MultinomialNB(alpha =5)
+
+NB2=MyModelNB2.fit(TrainDF, TrainLabels)
+Preds2 = MyModelNB2.predict(TestDF)
+Pred_Proba2 = MyModelNB2.predict_proba(TestDF)
+print(metrics.classification_report(TestLabels, Preds2))
+cnf_matrix1 = confusion_matrix(TestLabels, Preds2)
+
+##Visualise Confusion Matrix
+labels = label_list
+ax1=plt.subplot()
+sns.heatmap(confusion_matrix(TestLabels, Preds2), annot=True, fmt='g', ax=ax1);
+
+# labels, title and ticks
+ax1=plt.subplot()
+sns.heatmap(confusion_matrix(TestLabels, Preds), annot=True, fmt='g', ax=ax1)
+
+# labels, title and ticks
+ax1.set_xlabel('Predicted labels');ax1.set_ylabel('True labels');
+ax1.set_title('Confusion Matrix for Model 2') 
+ax1.xaxis.set_ticklabels(labels)
+ax1.yaxis.set_ticklabels(labels)
+ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, horizontalalignment='right')
+ax1.set_yticklabels(ax1.get_yticklabels(), rotation=45, horizontalalignment='right')
+plt.savefig('../../images/Confusion Matrix for Model 2.png')
+plt.show()
+plt.close()
+```
+
+### Model 3 (alpha = 10)
+
+```{python}
+MyModelNB3= MultinomialNB(alpha =10)
+
+NB3=MyModelNB3.fit(TrainDF, TrainLabels)
+Preds3 = MyModelNB3.predict(TestDF)
+Pred_Proba3 = MyModelNB3.predict_proba(TestDF)
+print(metrics.classification_report(TestLabels, Preds3))
+cnf_matrix1 = confusion_matrix(TestLabels, Preds3)
+
+##Visualise Confusion Matrix
+labels = label_list
+ax1=plt.subplot()
+sns.heatmap(confusion_matrix(TestLabels, Preds3), annot=True, fmt='g', ax=ax1);
+
+# labels, title and ticks
+ax1.set_xlabel('Predicted labels');ax1.set_ylabel('True labels');
+ax1.set_title('Confusion Matrix for Model 3') 
+ax1.xaxis.set_ticklabels(labels)
+ax1.yaxis.set_ticklabels(labels)
+ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, horizontalalignment='right')
+ax1.set_yticklabels(ax1.get_yticklabels(), rotation=45, horizontalalignment='right')
+plt.savefig('../../images/Confusion Matrix for Model 3.png')
+plt.show()
+plt.close()
+```
+
+# Conclusions
+
+- The accuracy and f1-score increases as we keep on increasing alpha.
+- For alphas 1 to 5 there is a greater increase in accuracy (~5%) than 5 to 10 (~1%).
+- We need a better model than Naive Bayes for getting higher accuracy.
+
+# Some other Interpretations and Visualizations
+
+Getting the 20 most used words in tweets for each team to help understand the fans of each team:
+
+```{python}
+class_0_prob_sorted = NB3.feature_log_prob_[0, :].argsort()[::-1]
+class_1_prob_sorted = NB3.feature_log_prob_[1, :].argsort()[::-1]
+class_2_prob_sorted = NB3.feature_log_prob_[2, :].argsort()[::-1]
+class_3_prob_sorted = NB3.feature_log_prob_[3, :].argsort()[::-1]
+class_4_prob_sorted = NB3.feature_log_prob_[4, :].argsort()[::-1]
+class_5_prob_sorted = NB3.feature_log_prob_[5, :].argsort()[::-1]
+class_6_prob_sorted = NB3.feature_log_prob_[6, :].argsort()[::-1]
+class_7_prob_sorted = NB3.feature_log_prob_[7, :].argsort()[::-1]
+class_8_prob_sorted = NB3.feature_log_prob_[8, :].argsort()[::-1]
+class_9_prob_sorted = NB3.feature_log_prob_[9, :].argsort()[::-1]
+
+print(np.take(MyCV_content.get_feature_names(), class_0_prob_sorted[:20]))
+word_cloud_0 = Counter(np.take(MyCV_content.get_feature_names(), class_0_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_1_prob_sorted[:20])) 
+word_cloud_1 = Counter(np.take(MyCV_content.get_feature_names(), class_1_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_2_prob_sorted[:20]))
+word_cloud_2 = Counter(np.take(MyCV_content.get_feature_names(), class_2_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_3_prob_sorted[:20])) 
+word_cloud_3 = Counter(np.take(MyCV_content.get_feature_names(), class_3_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_4_prob_sorted[:20]))
+word_cloud_4 = Counter(np.take(MyCV_content.get_feature_names(), class_4_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_5_prob_sorted[:20])) 
+word_cloud_5 = Counter(np.take(MyCV_content.get_feature_names(), class_5_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_6_prob_sorted[:20]))
+word_cloud_6 = Counter(np.take(MyCV_content.get_feature_names(), class_6_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_7_prob_sorted[:20])) 
+word_cloud_7 = Counter(np.take(MyCV_content.get_feature_names(), class_7_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_8_prob_sorted[:20]))
+word_cloud_8 = Counter(np.take(MyCV_content.get_feature_names(), class_8_prob_sorted[:20]))
+print(np.take(MyCV_content.get_feature_names(), class_9_prob_sorted[:20])) 
+word_cloud_9 = Counter(np.take(MyCV_content.get_feature_names(), class_9_prob_sorted[:20]))
+```
+
+- We can see that for each team the most used words are their team names, driver names and one of f1, formula one and so on.
+- Some top tier teams also have names of their rival team and driver names.
+
+```{python}
+label_map
+```
+
+Visualizing the top 20 words in tweets for each team using WorldClouds:
+
+```{python}
+print('WordCloud for:', label_list[0])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_0)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[1])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_1)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[2])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_2)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[3])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_3)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[4])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_4)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[5])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_5)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[6])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_6)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[7])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_7)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[8])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_8)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+
+print('WordCloud for:', label_list[9])
+wordcloud = WordCloud(background_color='black').fit_words(word_cloud_9)
+fig, ax = plt.subplots(figsize=(10,10))
+_ = ax.imshow(wordcloud, interpolation='bilinear')
+_ = ax.axis("off")
+```
+

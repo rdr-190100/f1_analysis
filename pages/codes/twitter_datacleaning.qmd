@@ -1,0 +1,340 @@
+---
+title: <b>Twitter Data Cleaning</b>
+format:
+  html:
+    theme: lumen
+    toc: true
+    self-contained: true
+    embed-resources: true
+    page-layout: full
+    code-fold: true
+    code-tools: true
+jupyter: python3
+execute: 
+  enabled: false
+---
+
+# Data Cleaning
+- In the era of big data, cleaning or scrubbing your data has become an essential part of the data management process. Even though data cleaning can be tedious at times, it is absolutely crucial for getting accurate business intelligence (BI) that can drive your strategic decisions.
+- Incorrect or inconsistent data leads to false conclusions. And so, how well you clean and understand the data has a high impact on the quality of the results.
+- Data cleaning involve different techniques based on the problem and the data type. Different methods can be applied with each has its own trade-offs. Overall, incorrect data is either removed, corrected, or imputed.
+- Data cleaning is the process of removing incorrect, duplicate, or otherwise erroneous data from a dataset. These errors can include incorrectly formatted data, redundant entries, mislabeled data, and other issues; they often arise when two or more datasets are combined together. Data cleaning improves the quality of your data as well as any business decisions that you draw based on the data.
+- There is no one right way to clean a dataset, as every set is different and presents its own unique slate of errors that need to be corrected. Many data cleaning techniques can now be automated with the help of dedicated software, but some portion of the work must be done manually to ensure the greatest accuracy. Usually this work is done by data quality analysts, BI analysts, and business users.
+- Every organization’s data cleaning methods will vary according to their individual needs as well as the particular constraints of the dataset. However, most data cleaning steps follow a standard framework:
+    1. Determine the critical data values you need for your analysis.
+    2. Collect the data you need, then sort and organize it.
+    3. Identify duplicate or irrelevant values and remove them.
+    4. Search for missing values and fill them in, so you have a complete dataset.
+    5. Fix any remaining structural or repetitive errors in the dataset.
+    6. Identify outliers and remove them, so they will not interfere with your analysis.
+    7. Validate your dataset to ensure it is ready for data transformation and analysis.
+    8. Once the set has been validated, perform your transformation and analysis.
+- `Data Cleaning vs. Data Cleansing vs. Data Scrubbing`
+    - You might sometimes hear the terms data cleansing or data scrubbing used instead of data cleaning. In most situations, these terms are all being used interchangeably and refer to the exact same thing. Data scrubbing may sometimes be used to refer to a specific aspect of data cleaning—namely, removing duplicate or bad data from datasets.
+    - You should also know that data scrubbing can have a slightly different meaning within the specific context of data storage; in this case, it refers to an automated function that evaluates storage systems and disk drives to identify any bad sectors or blocks and to confirm the data in them can be read.
+    - Note that all three of these terms—data cleaning, data cleansing, and data scrubbing—are different from data transformation, which is the act of taking clean data and converting it into a new format or structure. Data transformation is a separate process that comes after data cleaning.
+- `Benefits of Data Cleaning:`
+    - Not having clean data exacts a high price: IBM estimates that bad data costs the U.S. over $3 trillion each year. That’s because data-driven decisions are only as good as the data you are relying on. Bad quality data leads to equally bad quality decisions. If the data you are basing your strategy on is inaccurate, then your strategy will have the same issues present in the data, even if it seems sound. In fact, sometimes no data at all is better than bad data.
+    - Cleaning your data results in many benefits for your organization in both the short- and long-term. It leads to better decision making, which can boost your efficiency and your customer satisfaction, in turn giving your business a competitive edge. Over time, it also reduces your costs of data management by preemptively removing errors and other mistakes that would necessitate performing analysis over and over again.
+
+# Import Libraries
+
+```{python}
+from textblob import TextBlob
+import sys
+import tweepy
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import os
+import nltk
+import pycountry
+import re
+import string
+from wordcloud import WordCloud, STOPWORDS
+from PIL import Image
+
+
+nltk.downloader.download('vader_lexicon')
+from langdetect import detect
+from nltk.stem import SnowballStemmer
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from sklearn.feature_extraction.text import CountVectorizer
+```
+
+# Import Data
+
+```{python}
+ferrari_df = pd.read_csv('../../data/00-raw-data/tweet_data/ferrari_f1_tweets.csv')
+mercedes_df = pd.read_csv('../../data/00-raw-data/tweet_data/mercedes_f1_tweets.csv')
+redbull_df = pd.read_csv('../../data/00-raw-data/tweet_data/redbull_f1_tweets.csv')
+alfa_romeo_df = pd.read_csv('../../data/00-raw-data/tweet_data/alfa romeo_f1_tweets.csv')
+alpha_tauri_df = pd.read_csv('../../data/00-raw-data/tweet_data/alpha tauri_f1_tweets.csv')
+alpine_df = pd.read_csv('../../data/00-raw-data/tweet_data/alpine_f1_tweets.csv')
+aston_martin_df = pd.read_csv('../../data/00-raw-data/tweet_data/aston martin_f1_tweets.csv')
+haas_df = pd.read_csv('../../data/00-raw-data/tweet_data/haas_f1_tweets.csv')
+mclaren_df = pd.read_csv('../../data/00-raw-data/tweet_data/mclaren_f1_tweets.csv')
+williams_df = pd.read_csv('../../data/00-raw-data/tweet_data/williams_f1_tweets.csv')
+```
+
+# Cleaning the Data
+
+## Natural Language Processing terms:
+- `Stopwords:` 
+    - The words which are generally filtered out before processing a natural language are called stop words. These are actually the most common words in any language (like articles, prepositions, pronouns, conjunctions, etc) and does not add much information to the text. Examples of a few stop words in English are “the”, “a”, “an”, “so”, “what”.
+    - Stop words are available in abundance in any human language. By removing these words, we remove the low-level information from our text in order to give more focus to the important information. In order words, we can say that the removal of such words does not show any negative consequences on the model we train for our task. Removal of stop words definitely reduces the dataset size and thus reduces the training time due to the fewer number of tokens involved in the training.
+- `Stemming:` 
+    - Stemming is the process of reducing a word to its stem that affixes to suffixes and prefixes or to the roots of words known as "lemmas". Stemming is important in natural language understanding (NLU) and natural language processing (NLP).
+    - Stemming is a part of linguistic studies in morphology as well as artificial intelligence (AI) information retrieval and extraction. Stemming and AI knowledge extract meaningful information from vast sources like big data or the internet since additional forms of a word related to a subject may need to be searched to get the best results. Stemming is also a part of queries and internet search engines.
+    - Recognizing, searching and retrieving more forms of words returns more results. When a form of a word is recognized, it's possible to return search results that otherwise might have been missed. That additional information retrieved is why stemming is integral to search queries and information retrieval.
+- `Tokenization:`
+    - Tokenization is a way of separating a piece of text into smaller units called tokens. Here, tokens can be either words, characters, or subwords. Hence, tokenization can be broadly classified into 3 types
+        - word
+        - character
+        - subword (n-gram characters)
+    - As tokens are the building blocks of Natural Language, the most common way of processing the raw text happens at the token level.
+    - Tokenization is performed on the corpus to obtain tokens. The following tokens are then used to prepare a vocabulary. Vocabulary refers to the set of unique tokens in the corpus. Remember that vocabulary can be constructed by considering each unique token in the corpus or by considering the top K Frequently Occurring Words.
+
+## Helper functions:
+- *percentage*: computes the percentage of any number.
+- *remove_punct*: Removes punctuations and numbers from the text.
+- *tokenization*: Tokenizes the text data.
+- *remove_stopwords*: Removes stopwords from the data
+- *stemming*: Performs stemming on the text.
+
+```{python}
+def percentage(part,whole):
+    
+    return 100 * float(part)/float(whole)
+```
+
+```{python}
+def remove_punct(text):
+    
+    text  = "".join([char for char in text if char not in string.punctuation])
+    text = re.sub('[0-9]+', '', text) #removes numbers from text
+    return text
+```
+
+```{python}
+def tokenization(text):
+    
+    text = re.split('\W+', text)
+    return text
+
+stopword = nltk.corpus.stopwords.words('english')
+def remove_stopwords(text):
+    
+    text = [word for word in text if word not in stopword]
+    return text
+
+ps = nltk.PorterStemmer()
+def stemming(text):
+    
+    text = [ps.stem(word) for word in text]
+    return text
+
+def clean_text(text):
+    
+    text_lc = "".join([word.lower() for word in text if word not in string.punctuation]) # remove puntuation
+    text_rc = re.sub('[0-9]+', '', text_lc)
+    tokens = re.split('\W+', text_rc)    # tokenization
+    text = [ps.stem(word) for word in tokens if word not in stopword]  # remove stopwords and stemming
+    
+    return text
+```
+
+## Pipeline function:
+- `Sentiment Analysis:` Sentiment analysis (or opinion mining) is a natural language processing (NLP) technique used to determine whether data is positive, negative or neutral. Sentiment analysis is often performed on textual data to help businesses monitor brand and product sentiment in customer feedback, and understand customer needs.
+- Since humans express their thoughts and feelings more openly than ever before, sentiment analysis is fast becoming an essential tool to monitor and understand sentiment in all types of data.
+- The pipeline function computes the sentiments of all our tweets for different teams using polarity scores before and after applying the above helper functions. It also creates 3 separate dataframes for Positive, Neutral and Negative Sentiments for further analysis
+
+```{python}
+def pipeline(df):
+    
+    positive = 0
+    negative = 0
+    neutral = 0
+    polarity = 0
+    tweet_list = []
+    neutral_list = []
+    negative_list = []
+    positive_list = []
+
+    for tweet in df['text']:
+        
+        tweet_list.append(tweet)
+        analysis = TextBlob(tweet)
+        score = SentimentIntensityAnalyzer().polarity_scores(tweet)
+        neg = score['neg']
+        neu = score['neu']
+        pos = score['pos']
+        comp = score['compound']
+        polarity += analysis.sentiment.polarity
+        
+        if neg > pos:
+            
+            negative_list.append(tweet)
+            negative += 1
+            
+        elif pos > neg:
+            
+            positive_list.append(tweet)
+            positive += 1
+            
+        elif pos == neg:
+            
+            neutral_list.append(tweet)
+            neutral = neutral + 1
+            
+    
+    tweet_list = pd.DataFrame(tweet_list)
+    neutral_list = pd.DataFrame(neutral_list)
+    negative_list = pd.DataFrame(negative_list)
+    positive_list = pd.DataFrame(positive_list)
+
+    positive_percentage = percentage(positive,len(tweet_list))
+    negative_percentage = percentage(negative,len(tweet_list))
+    neutral_percentage = percentage(neutral,len(tweet_list))
+    
+    tweet_list.drop_duplicates(inplace = True)
+    
+    tw_list = pd.DataFrame(tweet_list)
+    tw_list['text'] = tw_list[0]
+    #Removing RT, Punctuation etc
+    remove_rt = lambda x: re.sub('@\w+: ', "", x)
+    tw_list["text"] = tw_list.text.map(remove_rt)
+    tw_list["text"] = tw_list.text.map(remove_punct)
+    tw_list["text"] = tw_list.text.str.lower()
+    
+    tw_list[['polarity', 'subjectivity']] = tw_list['text'].apply(lambda Text: pd.Series(TextBlob(Text).sentiment))
+
+    for index, row in tw_list['text'].iteritems():
+        score = SentimentIntensityAnalyzer().polarity_scores(row)
+        neg = score['neg']
+        neu = score['neu']
+        pos = score['pos']
+        comp = score['compound']
+        if neg > pos:
+            tw_list.loc[index, 'sentiment'] = "negative"
+        elif pos > neg:
+            tw_list.loc[index, "sentiment"] = "positive"
+        else:
+            tw_list.loc[index, "sentiment"] = "neutral"
+    
+    tw_list_negative = tw_list[tw_list["sentiment"]=="negative"]
+    tw_list_positive = tw_list[tw_list["sentiment"]=="positive"]
+    tw_list_neutral = tw_list[tw_list["sentiment"]=="neutral"]
+    
+    tw_list["text"] = tw_list.text.replace(" f ", " f1 ")        
+    tw_list['tokenized'] = tw_list['text'].apply(lambda x: tokenization(x.lower()))
+    tw_list['nonstop'] = tw_list['tokenized'].apply(lambda x: remove_stopwords(x))
+    tw_list['stemmed'] = tw_list['nonstop'].apply(lambda x: stemming(x))
+    
+    countVectorizer = CountVectorizer(analyzer=clean_text) 
+    countVector = countVectorizer.fit_transform(tw_list['text'])
+    
+    count_vect_df = pd.DataFrame(countVector.toarray(), columns=countVectorizer.get_feature_names_out())
+    
+    count = pd.DataFrame(count_vect_df.sum())
+    top_20_count = count.sort_values(0,ascending=False).head(20)
+    top_20_count.columns = ['count']
+    
+    return tw_list, top_20_count
+```
+
+Applying the pipeline function to tweets from different teams:
+
+```{python}
+ferrari_sentiment_df, ferrari_top_20_count = pipeline(ferrari_df)
+mercedes_sentiment_df, mercedes_top_20_count = pipeline(mercedes_df)
+redbull_sentiment_df, redbull_top_20_count = pipeline(redbull_df)
+haas_sentiment_df, haas_top_20_count = pipeline(haas_df)
+mclaren_sentiment_df, mclaren_top_20_count = pipeline(mclaren_df)
+alpine_sentiment_df, alpine_top_20_count = pipeline(alpine_df)
+williams_sentiment_df, williams_top_20_count = pipeline(williams_df)
+astonmartin_sentiment_df, astonmartin_top_20_count = pipeline(aston_martin_df)
+alphatauri_sentiment_df, alphatauri_top_20_count = pipeline(alpha_tauri_df)
+alfa_romeo_sentiment_df, alfa_romeo_top_20_count = pipeline(alfa_romeo_df)
+```
+
+```{python}
+ferrari_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/ferrari_sentiment_df.csv')
+mercedes_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/mercedes_sentiment_df.csv')
+redbull_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/redbull_sentiment_df.csv')
+haas_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/haas_sentiment_df.csv')
+mclaren_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/mclaren_sentiment_df.csv')
+alpine_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/alpine_sentiment_df.csv')
+williams_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/williams_sentiment_df.csv')
+astonmartin_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/astonmartin_sentiment_df.csv')
+alphatauri_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/alphatauri_sentiment_df.csv')
+alfa_romeo_sentiment_df.to_csv('../../data/01-modified-data/sentiment_analysis/alfa_romeo_sentiment_df.csv')
+```
+
+```{python}
+all_teams_top20_count = pd.concat([ferrari_top_20_count, mercedes_top_20_count, redbull_top_20_count, haas_top_20_count, mclaren_top_20_count, alpine_top_20_count, williams_top_20_count, astonmartin_top_20_count, alphatauri_top_20_count, alfa_romeo_top_20_count], axis=1)
+all_teams_top20_count.reset_index(inplace=True)
+all_teams_top20_count.columns = ['words', 'ferrari', 'mercedes', 'redbull', 'haas', 'mclaren', 'alpine', 'williams', 'aston martin', 'alpha tauri', 'alfa romeo']
+all_teams_top20_count.to_csv('../../data/01-modified-data/all_teams_top20_wordcount.csv')
+```
+
+```{python}
+all_teams_top20_count
+```
+
+Saving all the different tweets of each team into a single dataframe:
+
+```{python}
+keys = ['Ferrari', 'Mercedes', 'Redbull', 'Haas', 'Mclaren', 'Alpine', 'Williams', 'Aston Martin', 'Alpha Tauri', 'Alfa Romeo']
+all_teams_sentiment_df = pd.concat([ferrari_sentiment_df, mercedes_sentiment_df, redbull_sentiment_df, haas_sentiment_df, mclaren_sentiment_df, alpine_sentiment_df, williams_sentiment_df, astonmartin_sentiment_df, alphatauri_sentiment_df, alfa_romeo_sentiment_df], keys=keys, names=['Team', None], axis=0).reset_index(level = 'Team')
+```
+
+```{python}
+all_teams_sentiment_df.to_csv('../../data/01-modified-data/all_teams_sentiment_df.csv')
+```
+
+### Wordclouds:
+- Word clouds (also known as text clouds or tag clouds) work in a simple way: the more a specific word appears in a source of textual data (such as a speech, blog post, or database), the bigger and bolder it appears in the word cloud.
+- Also known as tag clouds or text clouds, these are ideal ways to pull out the most pertinent parts of textual data, from blog posts to databases. They can also help business users compare and contrast two different pieces of text to find the wording similarities between the two.
+
+Worldcloud function:
+
+```{python}
+def create_wordcloud(text):
+    #mask = np.array(Image.open("cloud.png"))
+    stopwords = set(STOPWORDS)
+    wc = WordCloud(background_color="white",
+                    max_words=3000,
+                    stopwords=stopwords,
+                    repeat=True)
+    wc.generate(str(text))
+    wc.to_file("wc.png")
+    print("Word Cloud Saved Successfully")
+    path="wc.png"
+    display(Image.open(path))
+```
+
+Wordclouds for different sentiments of Ferrari:
+
+```{python}
+create_wordcloud(tw_list["text"].values)
+```
+
+```{python}
+create_wordcloud(tw_list_positive["text"].values)
+```
+
+```{python}
+create_wordcloud(tw_list_negative["text"].values)
+```
+
+```{python}
+tw_list["text_len"] = tw_list["text"].astype(str).apply(len)
+tw_list["text_word_count"] = tw_list["text"].apply(lambda x: len(str(x).split()))
+round(pd.DataFrame(tw_list.groupby("sentiment").text_len.mean()),2)
+```
+
+```{python}
+round(pd.DataFrame(tw_list.groupby("sentiment").text_word_count.mean()),2)
+```
+

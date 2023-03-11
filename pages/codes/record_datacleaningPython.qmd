@@ -1,0 +1,757 @@
+---
+title: <b>Record Data Cleaning in Python</b>
+format:
+  html:
+    theme: lumen
+    toc: true
+    self-contained: true
+    embed-resources: true
+    page-layout: full
+    code-fold: true
+    code-tools: true
+jupyter: python3
+execute: 
+  enabled: false
+---
+
+# Data Cleaning
+- In the era of big data, cleaning or scrubbing your data has become an essential part of the data management process. Even though data cleaning can be tedious at times, it is absolutely crucial for getting accurate business intelligence (BI) that can drive your strategic decisions.
+- Incorrect or inconsistent data leads to false conclusions. And so, how well you clean and understand the data has a high impact on the quality of the results.
+- Data cleaning involve different techniques based on the problem and the data type. Different methods can be applied with each has its own trade-offs. Overall, incorrect data is either removed, corrected, or imputed.
+- Data cleaning is the process of removing incorrect, duplicate, or otherwise erroneous data from a dataset. These errors can include incorrectly formatted data, redundant entries, mislabeled data, and other issues; they often arise when two or more datasets are combined together. Data cleaning improves the quality of your data as well as any business decisions that you draw based on the data.
+- There is no one right way to clean a dataset, as every set is different and presents its own unique slate of errors that need to be corrected. Many data cleaning techniques can now be automated with the help of dedicated software, but some portion of the work must be done manually to ensure the greatest accuracy. Usually this work is done by data quality analysts, BI analysts, and business users.
+- Every organization’s data cleaning methods will vary according to their individual needs as well as the particular constraints of the dataset. However, most data cleaning steps follow a standard framework:
+    1. Determine the critical data values you need for your analysis.
+    2. Collect the data you need, then sort and organize it.
+    3. Identify duplicate or irrelevant values and remove them.
+    4. Search for missing values and fill them in, so you have a complete dataset.
+    5. Fix any remaining structural or repetitive errors in the dataset.
+    6. Identify outliers and remove them, so they will not interfere with your analysis.
+    7. Validate your dataset to ensure it is ready for data transformation and analysis.
+    8. Once the set has been validated, perform your transformation and analysis.
+- `Data Cleaning vs. Data Cleansing vs. Data Scrubbing`
+    - You might sometimes hear the terms data cleansing or data scrubbing used instead of data cleaning. In most situations, these terms are all being used interchangeably and refer to the exact same thing. Data scrubbing may sometimes be used to refer to a specific aspect of data cleaning—namely, removing duplicate or bad data from datasets.
+    - You should also know that data scrubbing can have a slightly different meaning within the specific context of data storage; in this case, it refers to an automated function that evaluates storage systems and disk drives to identify any bad sectors or blocks and to confirm the data in them can be read.
+    - Note that all three of these terms—data cleaning, data cleansing, and data scrubbing—are different from data transformation, which is the act of taking clean data and converting it into a new format or structure. Data transformation is a separate process that comes after data cleaning.
+- `Benefits of Data Cleaning:`
+    - Not having clean data exacts a high price: IBM estimates that bad data costs the U.S. over $3 trillion each year. That’s because data-driven decisions are only as good as the data you are relying on. Bad quality data leads to equally bad quality decisions. If the data you are basing your strategy on is inaccurate, then your strategy will have the same issues present in the data, even if it seems sound. In fact, sometimes no data at all is better than bad data.
+    - Cleaning your data results in many benefits for your organization in both the short- and long-term. It leads to better decision making, which can boost your efficiency and your customer satisfaction, in turn giving your business a competitive edge. Over time, it also reduces your costs of data management by preemptively removing errors and other mistakes that would necessitate performing analysis over and over again.
+
+# Import Libraries
+
+```{python}
+import pandas as pd
+import numpy as np
+import ast
+import json
+import requests
+from bs4 import BeautifulSoup
+from lxml import html
+import requests
+from numpy import NaN
+from collections import Counter
+import warnings
+warnings.filterwarnings('ignore')
+```
+
+# Import Data
+
+```{python}
+df = pd.read_csv('../../data/01-modified-data/data_cleaning_R.csv')
+df.head()
+```
+
+# Cleaning the Data
+
+```{python}
+a = 0
+b = 1
+c = 2
+d = 3
+e = 4
+
+df['Driver_Position'] = 0
+df['Driver_Points'] = 0
+df['driverRef'] = 0
+df['constructorRef'] = 0
+df['grid_pos'] = 0
+df['race_status'] = 0
+df['race_time'] = 0
+df['completed_laps'] = 0
+
+for i in range(1096):
+    
+    df['Driver_Position'][a] = df['Driver_Position_1'][a]
+    df['Driver_Position'][b] = df['Driver_Position_2'][b]
+    df['Driver_Position'][c] = df['Driver_Position_3'][c]
+    df['Driver_Position'][d] = df['Driver_Position_4'][d]
+    df['Driver_Position'][e] = df['Driver_Position_5'][e]
+    
+    df['Driver_Points'][a] = df['Driver_Points_1'][a]
+    df['Driver_Points'][b] = df['Driver_Points_2'][b]
+    df['Driver_Points'][c] = df['Driver_Points_3'][c]
+    df['Driver_Points'][d] = df['Driver_Points_4'][d]
+    df['Driver_Points'][e] = df['Driver_Points_5'][e]
+    
+    df['driverRef'][a] = df['driverRef_1'][a]
+    df['driverRef'][b] = df['driverRef_2'][b]
+    df['driverRef'][c] = df['driverRef_3'][c]
+    df['driverRef'][d] = df['driverRef_4'][d]
+    df['driverRef'][e] = df['driverRef_5'][e]
+    
+    df['constructorRef'][a] = df['constructorRef_1'][a]
+    df['constructorRef'][b] = df['constructorRef_2'][b]
+    df['constructorRef'][c] = df['constructorRef_3'][c]
+    df['constructorRef'][d] = df['constructorRef_4'][d]
+    df['constructorRef'][e] = df['constructorRef_5'][e]
+    
+    df['grid_pos'][a] = df['grid_pos_1'][a]
+    df['grid_pos'][b] = df['grid_pos_2'][b]
+    df['grid_pos'][c] = df['grid_pos_3'][c]
+    df['grid_pos'][d] = df['grid_pos_4'][d]
+    df['grid_pos'][e] = df['grid_pos_5'][e]
+    
+    df['race_status'][a] = df['race_status_1'][a]
+    df['race_status'][b] = df['race_status_2'][b]
+    df['race_status'][c] = df['race_status_3'][c]
+    df['race_status'][d] = df['race_status_4'][d]
+    df['race_status'][e] = df['race_status_5'][e]
+    
+    df['race_time'][a] = df['race_time_1'][a]
+    df['race_time'][b] = df['race_time_2'][b]
+    df['race_time'][c] = df['race_time_3'][c]
+    df['race_time'][d] = df['race_time_4'][d]
+    df['race_time'][e] = df['race_time_5'][e]
+    
+    df['completed_laps'][a] = df['completed_laps_1'][a]
+    df['completed_laps'][b] = df['completed_laps_2'][b]
+    df['completed_laps'][c] = df['completed_laps_3'][c]
+    df['completed_laps'][d] = df['completed_laps_4'][d]
+    df['completed_laps'][e] = df['completed_laps_5'][e]
+    
+    a = a+5
+    b = b+5
+    c = c+5
+    d = d+5
+    e = e+5
+    
+drop = ['Driver_Position_1', 'Driver_Position_2', 'Driver_Position_3', 'Driver_Position_4', 'Driver_Position_5',
+             'Driver_Points_1', 'Driver_Points_2', 'Driver_Points_3', 'Driver_Points_4', 'Driver_Points_5',
+             'driverRef_1', 'driverRef_2', 'driverRef_3', 'driverRef_4', 'driverRef_5',
+             'constructorRef_1', 'constructorRef_2', 'constructorRef_3', 'constructorRef_4', 'constructorRef_5',
+             'grid_pos_1', 'grid_pos_2', 'grid_pos_3', 'grid_pos_4', 'grid_pos_5', 
+             'completed_laps_1', 'completed_laps_2', 'completed_laps_3', 'completed_laps_4', 'completed_laps_5',
+             'race_status_1', 'race_status_2', 'race_status_3', 'race_status_4', 'race_status_5',
+             'race_time_1', 'race_time_2', 'race_time_3', 'race_time_4', 'race_time_5']
+
+df.drop(drop, axis = 1, inplace=True)
+
+df.to_csv('../../data/01-modified-data/race_result_cleaned.csv')
+```
+
+Getting and Un-packing Driver standings Information from our Raw data to merge it in the master data:
+
+```{python}
+ds_df = pd.read_csv('../../data/00-raw-data/driver_standings.csv')
+ast.literal_eval(ds_df['DriverStandings'][0])[0]
+```
+
+```{python}
+ds_df
+```
+
+```{python}
+season_list = list(df['season'].unique())
+ds_df_1 = pd.DataFrame(columns=['driverRef'] + season_list)
+ds_df_1['driverRef'] = ds_df['driverRef']
+ds_df_1.fillna(0, inplace=True)
+```
+
+```{python}
+ds_df_1
+```
+
+```{python}
+for i in range(len(ds_df)):
+    
+    for j in range(len(ast.literal_eval(ds_df['DriverStandings'][i]))):
+        
+        points = ast.literal_eval(ds_df['DriverStandings'][i])[j]['points']
+        driver = ast.literal_eval(ds_df['DriverStandings'][i])[j]['Driver']['driverId']
+        
+        if points == '':
+            points = 0
+            
+        for k in range(len(ds_df_1)):
+            
+            if driver == ds_df_1['driverRef'][k]:
+                ds_df_1[int(ds_df['season'][i])][k] = points
+```
+
+```{python}
+ds_df_1
+```
+
+```{python}
+race_results_df = pd.read_csv('../../data/00-raw-data/race_results.csv')
+```
+
+```{python}
+race_results_df
+```
+
+```{python}
+driver_list = list(driver_df['driverRef'].unique())
+```
+
+Finding the Cumulative Points of a driver for every race he has raced:
+
+```{python}
+point_history_dict = {i : 0 for i in driver_list}
+```
+
+```{python}
+df['Cumulative_Points'] = 0
+
+for i in range(len(race_results_df)):
+    
+    res_dict = ast.literal_eval(race_results_df['Results'][i])
+    
+    for j in range(len(res_dict)):
+        
+        for k in range(len(df)):
+        
+            if (race_results_df['season'][i] == df['season'][k]) & (race_results_df['round'][i] == df['round'][k]) & (res_dict[j]['Driver']['driverId'] == df['driverRef'][k]):
+                    
+                if res_dict[j]['points'] == '':
+                    res_dict[j]['points'] = 0
+                
+                df['Cumulative_Points'][k] = point_history_dict[res_dict[j]['Driver']['driverId']] + float(res_dict[j]['points'])    
+                point_history_dict[res_dict[j]['Driver']['driverId']] += float(res_dict[j]['points'])    
+```
+
+```{python}
+driver_df
+```
+
+Finding the year of birth of each driver at the time of the race:
+
+```{python}
+df['yob'] = 0
+for i in range(len(df)):
+    
+    for j in range(len(driver_df)):
+        
+        if df['driverRef'][i] == driver_df['driverRef'][j]:
+            df['yob'][i] = int(driver_df['dob'][j][:4])
+```
+
+Finding the cumulative wins of each driver up until each race:
+
+```{python}
+win_history_dict = {i : 0 for i in driver_list}    
+```
+
+```{python}
+df['Cumulative_Wins'] = 0
+
+for i in range(len(df)):
+    
+    if df['Driver_Position'][i] == 1:
+        
+        df['Cumulative_Wins'][i] = win_history_dict[df['driverRef'][i]] + 1
+        win_history_dict[df['driverRef'][i]] += 1
+    
+    else:
+        df['Cumulative_Wins'][i] = win_history_dict[df['driverRef'][i]]
+        
+```
+
+```{python}
+df.tail(40)
+```
+
+```{python}
+podium_per_race = {}
+
+for i in range(len(race_results_df)):
+    
+    result = ast.literal_eval(race_results_df['Results'][i])
+     
+    for j in range(len(result)):
+         
+        if result[j]['grid'] == '1':
+            
+            driver = result[j]['Driver']['driverId']
+             
+            podium_per_race[str(race_results_df['season'][i]) + '_' + str(race_results_df['round'][i])] = driver
+```
+
+```{python}
+df['Podiums'] = ''
+
+for i in range(len(df)):
+    
+    for keys in podium_per_race:
+    
+        if str(df['season'][i]) + '_' + str(df['round'][i]) == keys:
+            
+            df['Podiums'][i] = podium_per_race[keys]
+```
+
+```{python}
+df1 = df.groupby(['season', 'round'], as_index = False)['Podiums'].max()
+```
+
+```{python}
+df1['counter'] = ''
+
+for i in range(len(df1)):
+    
+    df1['counter'][i] = dict(Counter(df1['Podiums'][:i+1]))
+```
+
+```{python}
+df = pd.merge(df, df1, on = ['season', 'round'], how = 'left')
+```
+
+```{python}
+df.drop(['Podiums_y'], axis = 1, inplace=True)
+```
+
+```{python}
+df.rename(columns = {'Podiums_x' : 'Podiums'}, inplace=True)
+```
+
+```{python}
+df['podium_count'] = 0
+
+for i in range(len(df)):
+    
+    if df['driverRef'][i] in df['counter'][i].keys():
+        df['podium_count'][i] = df['counter'][i][df['driverRef'][i]]
+    
+    else:
+        df['podium_count'][i] = 0
+```
+
+Merging the season and round into one column for easy computations:
+
+```{python}
+season_info = df.groupby(['season', 'round'], as_index = False).count().iloc[:, :2]
+```
+
+```{python}
+race_results_df['season_round'] = ''
+
+for i in range(len(race_results_df)):
+    
+    race_results_df['season_round'][i] = str(race_results_df['season'][i]) + '_' + str(race_results_df['round'][i])
+```
+
+```{python}
+season_info['season_round'] = ''
+
+for i in range(len(season_info)):
+    
+    season_info['season_round'][i] = str(season_info['season'][i]) + '_' + str(season_info['round'][i])
+```
+
+```{python}
+df1 = pd.merge(season_info, race_results_df, on = 'season_round', how = 'inner')
+```
+
+```{python}
+df1.drop(['season_y', 'round_y', 'Unnamed: 0'], axis = 1, inplace=True)
+```
+
+```{python}
+df1
+```
+
+Unzipping the results of each driver in each race to create our main dataframe:
+
+```{python}
+main_df = pd.DataFrame()
+
+for i in range(len(df1)):
+    
+    data1 = pd.DataFrame(ast.literal_eval(df1['Results'][i]))
+    data1['season'] = df1['season_x'][i]
+    data1['round'] = df1['round_x'][i]
+    data1['season_round'] = df1['season_round'][i]
+    data1['circuitId'] = ast.literal_eval(df1['Circuit'][i])['circuitId']
+    data1['date'] = df1['date'][i]
+    data1['url'] = df1['url'][i]
+    data1['raceName	'] = df1['raceName'][i]
+    
+    main_df = pd.concat([main_df, data1], axis = 0)
+```
+
+```{python}
+main_df.reset_index(inplace=True)
+```
+
+```{python}
+main_df
+```
+
+```{python}
+main_df['driverRef'] = ''
+main_df['yob'] = 0
+main_df['constructorRef'] = ''
+
+for i in range(len(main_df)):
+    
+    main_df['driverRef'][i] = main_df['Driver'][i]['driverId']
+    main_df['yob'][i] = int(main_df['Driver'][i]['dateOfBirth'][:4])
+    main_df['constructorRef'][i] = main_df['Constructor'][i]['constructorId']
+    
+```
+
+Dropping useless columns:
+
+```{python}
+main_df.drop(['Driver', 'Constructor', 'index', 'number', 'positionText', 'Time'], axis = 1, inplace=True)
+```
+
+```{python}
+main_df
+```
+
+Webscraping weather information of each race of each season from wikipedia infobox:
+
+```{python}
+def get_infobox(url):
+    response = requests.get(url)
+    bs = BeautifulSoup(response.text)
+
+    table = bs.find('table', {'class' :'infobox vevent'})
+    result = {}
+    row_count = 0
+    if table is None:
+        pass
+    else:
+        for tr in table.find_all('tr'):
+            if tr.find('th'):
+                key = tr.find('th').text.strip()
+                if tr.find('td'):
+                    value = tr.find('td').text.strip()
+                    result[key] = value
+                else:
+                    result[key] = ''
+            else:
+                pass
+    return result
+```
+
+```{python}
+url_df = main_df.groupby(['season_round'], as_index = False)['url'].max()
+```
+
+```{python}
+url_df['weather'] = np.nan
+
+for i in range(0, len(url_df)):
+    infobox = get_infobox(url_df['url'][i])
+    infobox_keys = get_infobox(url_df['url'][i]).keys()
+    
+    if 'Weather' in infobox_keys:
+        url_df['weather'][i] = infobox['Weather']
+    else:
+        url_df['weather'][i] = np.nan
+```
+
+```{python}
+main_df = pd.merge(main_df, url_df, on = 'season_round', how = 'left')
+```
+
+```{python}
+main_df
+```
+
+Classifying weather into Rainy, Snowy, Windy, Cloudy, Fine, Sunny:
+
+```{python}
+for i in range(len(main_df)):
+    
+    if main_df['weather'][i] is not NaN:
+        
+        if ('rain' in main_df['weather'][i].lower()) | ('wet' in main_df['weather'][i].lower()) | ('showers' in main_df['weather'][i].lower()) | ('drizzle' in main_df['weather'][i].lower()) | ('rainy' in main_df['weather'][i].lower()) | ('drizzly' in main_df['weather'][i].lower()):
+            main_df['weather'][i] = 'Rainy'
+        
+        elif ('snow' in main_df['weather'][i].lower()) | ('cold' in main_df['weather'][i].lower()) | ('frost' in main_df['weather'][i].lower()) | ('icy' in main_df['weather'][i].lower()):
+            main_df['weather'][i] = 'Snowy'
+        
+        elif ('windy' in main_df['weather'][i].lower()) | ('wind' in main_df['weather'][i].lower()) | ('gusty' in main_df['weather'][i].lower()) | ('blustery' in main_df['weather'][i].lower()):
+            main_df['weather'][i] = 'Windy'
+        
+        elif ('cloudy' in main_df['weather'][i].lower()) | ('overcast' in main_df['weather'][i].lower()) | ('partly cloudy' in main_df['weather'][i].lower()) | ('partly sunny' in main_df['weather'][i].lower()) | ('hazy' in main_df['weather'][i].lower()) | ('foggy' in main_df['weather'][i].lower()) | ('fog' in main_df['weather'][i].lower()) | ('misty' in main_df['weather'][i].lower()) | ('mist' in main_df['weather'][i].lower()) | ('cloud' in main_df['weather'][i].lower()):
+            main_df['weather'][i] = 'Cloudy'
+            
+        elif ('fine' in main_df['weather'][i].lower()) | ('fair' in main_df['weather'][i].lower()) | ('mild' in main_df['weather'][i].lower()):
+            main_df['weather'][i] = 'Fine'
+        
+        elif ('sunny' in main_df['weather'][i].lower()) | ('clear' in main_df['weather'][i].lower()) | ('warm' in main_df['weather'][i].lower()) | ('hot' in main_df['weather'][i].lower()) | ('dry' in main_df['weather'][i].lower()):
+            main_df['weather'][i] = 'Sunny'
+            
+        else:
+            main_df['weather'][i] = 'Sunny'
+    
+    else:
+        pass
+```
+
+```{python}
+main_df['weather'].value_counts()
+```
+
+```{python}
+main_df.drop(['url_y', 'raceName\t', 'FastestLap'], axis = 1, inplace=True)
+```
+
+```{python}
+main_df
+```
+
+Importing other raw datas for further cleaning and engineering:
+
+```{python}
+pitstop_df = pd.read_csv('../../data/00-raw-data/pit_stops.csv')
+pitstop_count = pitstop_df.groupby(['raceId', 'driverId'], as_index=False)['stop'].count()
+```
+
+```{python}
+race_df = pd.read_csv('../../data/00-raw-data/races.csv')
+race_df.rename(columns={'year':'season'}, inplace=True)
+race_df =  race_df[['raceId', 'season', 'round', 'circuitId']]
+race_df.head()
+```
+
+```{python}
+driver_df = pd.read_csv('../../data/00-raw-data/drivers.csv')
+driver_df.head()
+```
+
+```{python}
+pitstop_count
+```
+
+Merging raw datasets with main data to get additional feature columns:
+
+```{python}
+main_df = pd.merge(main_df, driver_df, on = ['driverRef'], how = 'left')
+```
+
+```{python}
+main_df.drop(['url_x', 'driverRef', 'code', 'number', 'nationality', 'forename', 'surname', 'dob'], axis = 1, inplace=True)
+```
+
+```{python}
+main_df = pd.merge(main_df, race_df, on = ['season', 'round'], how = 'left')
+```
+
+```{python}
+main_df.rename(columns={'circuitId_x' : 'circuitRef', 'circuitId_y' : 'circuitId'}, inplace=True)
+main_df
+```
+
+```{python}
+main_df = pd.merge(main_df, pitstop_count, on = ['raceId', 'driverId'], how = 'left')
+```
+
+```{python}
+main_df
+```
+
+```{python}
+for i in range(len(main_df)):
+    
+    if ('Lap' in main_df['status'][i]) | ('lap' in main_df['status'][i]):
+        main_df['status'][i] = 'Lapped'
+    
+    elif 'Accident' in main_df['status'][i]:
+        main_df['status'][i] = 'Accident'
+        
+    elif 'Finished' in main_df['status'][i]:
+        main_df['status'][i] = 'Finished'
+        
+    else:
+        main_df['status'][i] = 'Mechanical_Issue'
+```
+
+```{python}
+main_df
+```
+
+```{python}
+main_df['age_on_race'] = main_df['season'] - main_df['yob']
+main_df.drop('yob', axis = 1, inplace=True)
+```
+
+Replacing null values in Pit stop and Weather columns with string "Not Available":
+
+```{python}
+main_df['stop'].fillna('Not Available', inplace=True)
+main_df['weather'].fillna('Not Available', inplace=True)
+```
+
+Converting other numerical values in stop column to text:
+
+```{python}
+for i in range(len(main_df)):
+    
+    if main_df['stop'][i] == 1.0:
+        main_df['stop'][i] = 'One'
+    
+    elif main_df['stop'][i] == 2.0:
+        main_df['stop'][i] = 'Two'
+    
+    elif main_df['stop'][i] == 3.0:
+        main_df['stop'][i] = 'Three'
+    
+    elif main_df['stop'][i] == 4.0:
+        main_df['stop'][i] = 'Four'
+    
+    elif main_df['stop'][i] == 5.0:
+        main_df['stop'][i] = 'Five'
+    
+    elif main_df['stop'][i] == 6.0:
+        main_df['stop'][i] = 'Six'
+        
+    elif main_df['stop'][i] == 7.0:
+        main_df['stop'][i] = 'Seven'
+        
+    else:
+        pass
+```
+
+```{python}
+main_df
+```
+
+```{python}
+main_df[['position', 'points', 'grid', 'laps', 'season', 'round', 'driverId', 'raceId', 'circuitId', 'age_on_race']] = main_df[['position', 'points', 'grid', 'laps', 'season', 'round', 'driverId', 'raceId', 'circuitId', 'age_on_race']].apply(pd.to_numeric)
+```
+
+Getting the Cumulative sum of points and laps completed by each driver for every race:
+
+```{python}
+main_df['cumulative_points'] = main_df.groupby(['driverId'])['points'].cumsum()
+main_df['cumulative_laps'] = main_df.groupby(['driverId'])['laps'].cumsum()
+```
+
+```{python}
+main_df
+```
+
+Getting the number of poles and wins achieved till a specific race for every driver in every race:
+
+```{python}
+grid_df = main_df[['season', 'round', 'driverId']][main_df['grid'] == 1]
+```
+
+```{python}
+main_df = pd.merge(main_df, grid_df, on = ['season', 'round'], how = 'left')
+main_df.rename(columns={'driverId_x' : 'driverId', 'driverId_y' : 'pole_driverId'}, inplace=True)
+```
+
+```{python}
+history_dict = {i : 0 for i in list(main_df['driverId'].unique())} 
+```
+
+```{python}
+main_df['pole_history'] = 0
+    
+for j in range(len(main_df)):
+        
+    if (main_df['driverId'][j] == main_df['pole_driverId'][j]):
+            
+        history_dict[main_df['driverId'][j]] += 1
+        main_df['pole_history'][j] = history_dict[main_df['driverId'][j]]
+        
+    else:
+        main_df['pole_history'][j] = history_dict[main_df['driverId'][j]]
+```
+
+```{python}
+win_df = main_df[['season_round', 'driverId']][main_df['position'] == 1]
+```
+
+```{python}
+main_df = pd.merge(main_df, win_df, on = ['season_round'], how = 'left')
+```
+
+```{python}
+main_df.rename(columns={'driverId_x' : 'driverId', 'driverId_y' : 'win_driverId'}, inplace=True)
+```
+
+```{python}
+main_df
+```
+
+```{python}
+history_dict = {i : 0 for i in list(main_df['driverId'].unique())} 
+
+main_df['win_history'] = 0
+    
+    
+for j in range(len(main_df)):
+        
+    if (main_df['driverId'][j] == main_df['win_driverId'][j]):
+            
+        history_dict[main_df['driverId'][j]] += 1
+        main_df['win_history'][j] = history_dict[main_df['driverId'][j]]
+        
+    else:
+        main_df['win_history'][j] = history_dict[main_df['driverId'][j]]
+```
+
+```{python}
+main_df.drop(['circuitRef', 'url', 'date'], axis = 1, inplace=True)
+```
+
+```{python}
+main_df.columns
+```
+
+```{python}
+main_df = main_df[['season', 'round', 'season_round', 'driverId', 'raceId',
+                    'circuitId', 'position', 'points', 'grid', 'laps', 'status',
+                    'constructorRef', 'weather', 'stop', 'age_on_race', 'cumulative_points',
+                    'cumulative_laps', 'pole_driverId', 'pole_history', 'win_driverId',
+                    'win_history']]
+```
+
+```{python}
+main_df
+```
+
+Creating a label column for Supervised Machine learning with 3 label variables - Podium (Top 3 finish), Top_10 (4-10 finish) and Outisde_Top_10 (10+ finish):
+
+```{python}
+main_df['label'] = ''
+
+for i in range(len(main_df)):
+    
+    if main_df['position'][i] in [1, 2, 3]:
+        main_df['label'][i] = 'Podium'
+        
+    elif main_df['position'][i] in [4, 5, 6, 7, 8, 9, 10]:
+        main_df['label'][i] = 'Top_10'
+    
+    else:
+        main_df['label'][i] = 'Outside_Top_10'
+    
+```
+
+```{python}
+main_df
+```
+
+Exporting the dataframe to a csv file:
+
+```{python}
+main_df.to_csv('../../data/01-modified-data/data_cleaned.csv', index=False)
+```
+

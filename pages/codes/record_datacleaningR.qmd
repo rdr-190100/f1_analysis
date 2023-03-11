@@ -1,0 +1,263 @@
+---
+title: <b>Record Data Cleaning in R</b>
+format:
+  html:
+    theme: lumen
+    toc: true
+    self-contained: true
+    embed-resources: true
+    page-layout: full
+    code-fold: true
+    code-tools: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+# Data Cleaning
+- In the era of big data, cleaning or scrubbing your data has become an essential part of the data management process. Even though data cleaning can be tedious at times, it is absolutely crucial for getting accurate business intelligence (BI) that can drive your strategic decisions.
+- Incorrect or inconsistent data leads to false conclusions. And so, how well you clean and understand the data has a high impact on the quality of the results.
+- Data cleaning involve different techniques based on the problem and the data type. Different methods can be applied with each has its own trade-offs. Overall, incorrect data is either removed, corrected, or imputed.
+- Data cleaning is the process of removing incorrect, duplicate, or otherwise erroneous data from a dataset. These errors can include incorrectly formatted data, redundant entries, mislabeled data, and other issues; they often arise when two or more datasets are combined together. Data cleaning improves the quality of your data as well as any business decisions that you draw based on the data.
+- There is no one right way to clean a dataset, as every set is different and presents its own unique slate of errors that need to be corrected. Many data cleaning techniques can now be automated with the help of dedicated software, but some portion of the work must be done manually to ensure the greatest accuracy. Usually this work is done by data quality analysts, BI analysts, and business users.
+- Every organization’s data cleaning methods will vary according to their individual needs as well as the particular constraints of the dataset. However, most data cleaning steps follow a standard framework:
+    1. Determine the critical data values you need for your analysis.
+    2. Collect the data you need, then sort and organize it.
+    3. Identify duplicate or irrelevant values and remove them.
+    4. Search for missing values and fill them in, so you have a complete dataset.
+    5. Fix any remaining structural or repetitive errors in the dataset.
+    6. Identify outliers and remove them, so they will not interfere with your analysis.
+    7. Validate your dataset to ensure it is ready for data transformation and analysis.
+    8. Once the set has been validated, perform your transformation and analysis.
+- Data Cleaning vs. Data Cleansing vs. Data Scrubbing:
+  - You might sometimes hear the terms data cleansing or data scrubbing used instead of data cleaning. In most situations, these terms are all being used interchangeably and refer to the exact same thing. Data scrubbing may sometimes be used to refer to a specific aspect of data cleaning—namely, removing duplicate or bad data from datasets.
+  - You should also know that data scrubbing can have a slightly different meaning within the specific context of data storage; in this case, it refers to an automated function that evaluates storage systems and disk drives to identify any bad sectors or blocks and to confirm the data in them can be read.
+  - Note that all three of these terms—data cleaning, data cleansing, and data scrubbing—are different from data transformation, which is the act of taking clean data and converting it into a new format or structure. Data transformation is a separate process that comes after data cleaning.
+- Benefits of Data Cleaning:
+  - Not having clean data exacts a high price: IBM estimates that bad data costs the U.S. over $3 trillion each year. That’s because data-driven decisions are only as good as the data you are relying on. Bad quality data leads to equally bad quality decisions. If the data you are basing your strategy on is inaccurate, then your strategy will have the same issues present in the data, even if it seems sound. In fact, sometimes no data at all is better than bad data.
+  - Cleaning your data results in many benefits for your organization in both the short- and long-term. It leads to better decision making, which can boost your efficiency and your customer satisfaction, in turn giving your business a competitive edge. Over time, it also reduces your costs of data management by preemptively removing errors and other mistakes that would necessitate performing analysis over and over again.
+
+
+# Importing Libraries
+
+```{r}
+library(tidyr)
+library(tidyverse)
+library(plyr)
+library(stringr)
+```
+
+# Importing Data
+
+```{r}
+race_df = read_csv("../../data/00-raw-data/race_results.csv")
+circuit_df = read_csv("../../data/00-raw-data/circuit_info.csv")
+driver_df = read_csv('../../data/00-raw-data/drivers.csv')
+```
+
+# Cleaning the Data
+
+Dropping unnecesarry columns:
+
+```{r}
+colnames(race_df) = c('index', 'season', 'round', 'url', 'raceName', 'Circuit', 'date', 'Results', 'time')
+drop = c("index", "url")
+race_df = race_df[,!(names(race_df) %in% drop)]
+```
+
+```{r}
+colnames(circuit_df) = c('index', 'circuitId', 'url', 'circuitName', 'Location')
+drop = c("index", "url")
+circuit_df = circuit_df[,!(names(circuit_df) %in% drop)]
+```
+
+Removing brackets and apostrophes from the data as it is not needed:
+
+```{r}
+race_df = race_df %>% 
+  mutate(across('Circuit', str_replace, fixed("{"), ''),
+         across('Circuit', str_replace, fixed("}"), ''))
+```
+
+```{r}
+race_df$circuitId =  word(race_df$Circuit,1,sep = ",")
+race_df$circuitId = word(race_df$circuitId,2,sep = ": ")
+race_df$circuitId = gsub("'", "", race_df$circuitId)
+```
+
+Merging Dataframes:
+
+```{r}
+df = merge(race_df, circuit_df, by = 'circuitId', all.x = TRUE)
+df = df[order(df$season, df$round), ]
+head(df)
+```
+
+```{r}
+head(driver_df)
+```
+
+Unzipping Dictionaries from Race results column:
+
+```{r}
+df$Results_Position_1 =  word(df$Results,1,sep = fixed(", {'number'"))
+df$Results_Position_2 =  word(df$Results,2,sep = fixed(", {'number'"))
+df$Results_Position_3 =  word(df$Results,3,sep = fixed(", {'number'"))
+df$Results_Position_4 =  word(df$Results,4,sep = fixed(", {'number'"))
+df$Results_Position_5 =  word(df$Results,5,sep = fixed(", {'number'"))
+```
+
+```{r}
+df$Driver_Position_1 = word(df$Results_Position_1,2,sep = fixed(","))
+df$Driver_Position_2 = word(df$Results_Position_2,2,sep = fixed(","))
+df$Driver_Position_3 = word(df$Results_Position_3,2,sep = fixed(","))
+df$Driver_Position_4 = word(df$Results_Position_4,2,sep = fixed(","))
+df$Driver_Position_5 = word(df$Results_Position_5,2,sep = fixed(","))
+
+df$Driver_Position_1 = word(df$Driver_Position_1,2,sep = fixed(": "))
+df$Driver_Position_2 = word(df$Driver_Position_2,2,sep = fixed(": "))
+df$Driver_Position_3 = word(df$Driver_Position_3,2,sep = fixed(": "))
+df$Driver_Position_4 = word(df$Driver_Position_4,2,sep = fixed(": "))
+df$Driver_Position_5 = word(df$Driver_Position_5,2,sep = fixed(": "))
+
+df$Driver_Points_1 = word(df$Results_Position_1,4,sep = fixed(","))
+df$Driver_Points_2 = word(df$Results_Position_2,4,sep = fixed(","))
+df$Driver_Points_3 = word(df$Results_Position_3,4,sep = fixed(","))
+df$Driver_Points_4 = word(df$Results_Position_4,4,sep = fixed(","))
+df$Driver_Points_5 = word(df$Results_Position_5,4,sep = fixed(","))
+
+df$Driver_Points_1 = word(df$Driver_Points_1,2,sep = fixed(": "))
+df$Driver_Points_2 = word(df$Driver_Points_2,2,sep = fixed(": "))
+df$Driver_Points_3 = word(df$Driver_Points_3,2,sep = fixed(": "))
+df$Driver_Points_4 = word(df$Driver_Points_4,2,sep = fixed(": "))
+df$Driver_Points_5 = word(df$Driver_Points_5,2,sep = fixed(": "))
+
+df$Driver_Info_1 = word(df$Results_Position_1,2,sep = fixed("'Driver': {"))
+df$Driver_Info_2 = word(df$Results_Position_2,2,sep = fixed("'Driver': {"))
+df$Driver_Info_3 = word(df$Results_Position_3,2,sep = fixed("'Driver': {"))
+df$Driver_Info_4 = word(df$Results_Position_4,2,sep = fixed("'Driver': {"))
+df$Driver_Info_5 = word(df$Results_Position_5,2,sep = fixed("'Driver': {"))
+
+df$driverRef_1 = word(df$Driver_Info_1,1,sep = fixed(","))
+df$driverRef_2 = word(df$Driver_Info_2,1,sep = fixed(","))
+df$driverRef_3 = word(df$Driver_Info_3,1,sep = fixed(","))
+df$driverRef_4 = word(df$Driver_Info_4,1,sep = fixed(","))
+df$driverRef_5 = word(df$Driver_Info_5,1,sep = fixed(","))
+
+df$driverRef_1 = word(df$driverRef_1,2,sep = fixed(": "))
+df$driverRef_2 = word(df$driverRef_2,2,sep = fixed(": "))
+df$driverRef_3 = word(df$driverRef_3,2,sep = fixed(": "))
+df$driverRef_4 = word(df$driverRef_4,2,sep = fixed(": "))
+df$driverRef_5 = word(df$driverRef_5,2,sep = fixed(": "))
+
+df$Constructor_Info_1 = word(df$Results_Position_1,2,sep = fixed("'Constructor': {"))
+df$Constructor_Info_2 = word(df$Results_Position_2,2,sep = fixed("'Constructor': {"))
+df$Constructor_Info_3 = word(df$Results_Position_3,2,sep = fixed("'Constructor': {"))
+df$Constructor_Info_4 = word(df$Results_Position_4,2,sep = fixed("'Constructor': {"))
+df$Constructor_Info_5 = word(df$Results_Position_5,2,sep = fixed("'Constructor': {"))
+
+df$constructorRef_1 = word(df$Constructor_Info_1,1,sep = fixed(","))
+df$constructorRef_2 = word(df$Constructor_Info_2,1,sep = fixed(","))
+df$constructorRef_3 = word(df$Constructor_Info_3,1,sep = fixed(","))
+df$constructorRef_4 = word(df$Constructor_Info_4,1,sep = fixed(","))
+df$constructorRef_5 = word(df$Constructor_Info_5,1,sep = fixed(","))
+
+df$constructorRef_1 = word(df$constructorRef_1,2,sep = fixed(": "))
+df$constructorRef_2 = word(df$constructorRef_2,2,sep = fixed(": "))
+df$constructorRef_3 = word(df$constructorRef_3,2,sep = fixed(": "))
+df$constructorRef_4 = word(df$constructorRef_4,2,sep = fixed(": "))
+df$constructorRef_5 = word(df$constructorRef_5,2,sep = fixed(": "))
+
+df$otherinfo_1 = word(df$Results_Position_1,2,sep = fixed("'grid'"))
+df$otherinfo_2 = word(df$Results_Position_2,2,sep = fixed("'grid'"))
+df$otherinfo_3 = word(df$Results_Position_3,2,sep = fixed("'grid'"))
+df$otherinfo_4 = word(df$Results_Position_4,2,sep = fixed("'grid'"))
+df$otherinfo_5 = word(df$Results_Position_5,2,sep = fixed("'grid'"))
+
+df$grid_pos_1 = word(df$otherinfo_1,1,sep = fixed(","))
+df$grid_pos_2 = word(df$otherinfo_2,1,sep = fixed(","))
+df$grid_pos_3 = word(df$otherinfo_3,1,sep = fixed(","))
+df$grid_pos_4 = word(df$otherinfo_4,1,sep = fixed(","))
+df$grid_pos_5 = word(df$otherinfo_5,1,sep = fixed(","))
+
+df$completed_laps_1 = word(df$otherinfo_1,2,sep = fixed(","))
+df$completed_laps_2 = word(df$otherinfo_2,2,sep = fixed(","))
+df$completed_laps_3 = word(df$otherinfo_3,2,sep = fixed(","))
+df$completed_laps_4 = word(df$otherinfo_4,2,sep = fixed(","))
+df$completed_laps_5 = word(df$otherinfo_5,2,sep = fixed(","))
+
+df$race_status_1 = word(df$otherinfo_1,3,sep = fixed(","))
+df$race_status_2 = word(df$otherinfo_2,3,sep = fixed(","))
+df$race_status_3 = word(df$otherinfo_3,3,sep = fixed(","))
+df$race_status_4 = word(df$otherinfo_4,3,sep = fixed(","))
+df$race_status_5 = word(df$otherinfo_5,3,sep = fixed(","))
+
+df$race_time_1 = word(df$otherinfo_1,2,sep = fixed("'Time':"))
+df$race_time_2 = word(df$otherinfo_2,2,sep = fixed("'Time':"))
+df$race_time_3 = word(df$otherinfo_3,2,sep = fixed("'Time':"))
+df$race_time_4 = word(df$otherinfo_4,2,sep = fixed("'Time':"))
+df$race_time_5 = word(df$otherinfo_5,2,sep = fixed("'Time':"))
+
+df$grid_pos_1 = word(df$grid_pos_1,2,sep = fixed(": "))
+df$grid_pos_2 = word(df$grid_pos_2,2,sep = fixed(": "))
+df$grid_pos_3 = word(df$grid_pos_3,2,sep = fixed(": "))
+df$grid_pos_4 = word(df$grid_pos_4,2,sep = fixed(": "))
+df$grid_pos_5 = word(df$grid_pos_5,2,sep = fixed(": "))
+
+df$completed_laps_1 = word(df$completed_laps_1,2,sep = fixed(": "))
+df$completed_laps_2 = word(df$completed_laps_2,2,sep = fixed(": "))
+df$completed_laps_3 = word(df$completed_laps_3,2,sep = fixed(": "))
+df$completed_laps_4 = word(df$completed_laps_4,2,sep = fixed(": "))
+df$completed_laps_5 = word(df$completed_laps_5,2,sep = fixed(": "))
+
+df$race_status_1 = word(df$race_status_1,2,sep = fixed(": "))
+df$race_status_2 = word(df$race_status_2,2,sep = fixed(": "))
+df$race_status_3 = word(df$race_status_3,2,sep = fixed(": "))
+df$race_status_4 = word(df$race_status_4,2,sep = fixed(": "))
+df$race_status_5 = word(df$race_status_5,2,sep = fixed(": "))
+```
+
+Dropping the columns created above:
+
+```{r}
+drop = c("Driver_Info_1", "Driver_Info_2", "Driver_Info_3", "Driver_Info_4", "Driver_Info_5", "Constructor_Info_1", "Constructor_Info_2", "Constructor_Info_3", "Constructor_Info_4", "Constructor_Info_5", "Driver_Info_1", "Driver_Info_1", "Driver_Info_1", "Driver_Info_1", "Driver_Info_1", "Circuit", "Results", "otherinfo_1", "otherinfo_2", "otherinfo_3", "otherinfo_4", "otherinfo_5", "Results_Position_1", "Results_Position_2", "Results_Position_3", "Results_Position_4", "Results_Position_5", "time")
+df = df[,!(names(df) %in% drop)]
+```
+
+```{r}
+num_cols = c('Driver_Position_1', 'Driver_Position_2', 'Driver_Position_3', 'Driver_Position_4', 'Driver_Position_5',
+             'Driver_Points_1', 'Driver_Points_2', 'Driver_Points_3', 'Driver_Points_4', 'Driver_Points_5',
+             'grid_pos_1', 'grid_pos_2', 'grid_pos_3', 'grid_pos_4', 'grid_pos_5', 
+             'completed_laps_1', 'completed_laps_2', 'completed_laps_3', 'completed_laps_4', 'completed_laps_5')
+```
+
+```{r}
+fn <- function(x) gsub("'", "", x)
+fncol <- colwise(fn, .cols=num_cols)
+df[, num_cols] = fncol(df)
+```
+
+Converting columns to numeric:
+
+```{r}
+df[num_cols] = sapply(df[num_cols], as.numeric)
+```
+
+```{r}
+colnames(df)
+```
+
+```{r}
+df2 = df[rep(seq_len(nrow(df)), each = 5), ]
+rownames(df2) <- 1:nrow(df2)
+head(df2)
+```
+
+Exporting the CSV for further cleaning:
+
+```{r}
+write_csv(df2, '../../data/01-modified-data/data_cleaning_R.csv', na = '') #to python
+```
+
+To be Continued in Python since R does not support handling dictionaries.
